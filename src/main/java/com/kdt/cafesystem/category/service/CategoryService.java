@@ -4,8 +4,8 @@ import com.kdt.cafesystem.category.dto.CategoryRequestDto;
 import com.kdt.cafesystem.category.dto.CategoryResponseDto;
 import com.kdt.cafesystem.category.entity.Category;
 import com.kdt.cafesystem.category.repository.CategoryRepo;
-import com.kdt.cafesystem.global.ApiException;
-import com.kdt.cafesystem.global.ErrorCode;
+import com.kdt.cafesystem.global.exception.BusinessException;
+import com.kdt.cafesystem.global.exception.ErrorCode;
 import com.kdt.cafesystem.menu.repository.MenuRepo;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -43,7 +43,7 @@ public class CategoryService {
     public CategoryResponseDto find(Long id) {
         Optional<Category> foundCategory = categoryRepo.findById(id);
         if (foundCategory.isEmpty()) {
-            throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND);
+            throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
         return toDto(foundCategory.get());
     }
@@ -52,13 +52,13 @@ public class CategoryService {
     public CategoryResponseDto create(CategoryRequestDto req) {
         String name = req.name().trim();
         if (categoryRepo.findByName(name).isPresent()) {
-            throw new ApiException(ErrorCode.CATEGORY_NAME_DUPLICATED);
+            throw new BusinessException(ErrorCode.CATEGORY_NAME_DUPLICATED);
         }
         try {
             Category saved = categoryRepo.saveAndFlush(new Category(name));
             return toDto(saved);
         } catch (DataIntegrityViolationException e) {
-            throw new ApiException(ErrorCode.CATEGORY_NAME_DUPLICATED);
+            throw new BusinessException(ErrorCode.CATEGORY_NAME_DUPLICATED);
         }
     }
 
@@ -66,14 +66,14 @@ public class CategoryService {
     public CategoryResponseDto update(Long id, CategoryRequestDto req) {
         Optional<Category> foundCategory = categoryRepo.findById(id);
         if (foundCategory.isEmpty()) {
-            throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND);
+            throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
         Category category = foundCategory.get();
         String name = req.name().trim();
 
         Optional<Category> found = categoryRepo.findByName(name);
         if (found.isPresent() && !found.get().getId().equals(id)) {
-            throw new ApiException(ErrorCode.CATEGORY_NAME_DUPLICATED);
+            throw new BusinessException(ErrorCode.CATEGORY_NAME_DUPLICATED);
         }
 
         category.setName(name);
@@ -84,11 +84,11 @@ public class CategoryService {
     public void delete(Long id) {
         Optional<Category> foundCategory = categoryRepo.findById(id);
         if (foundCategory.isEmpty()) {
-            throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND);
+            throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
         Category category = foundCategory.get();
         if (menuRepo.existsByCategoryId(id)) {
-            throw new ApiException(ErrorCode.CATEGORY_IN_USE);
+            throw new BusinessException(ErrorCode.CATEGORY_IN_USE);
         }
         categoryRepo.delete(category);
     }
