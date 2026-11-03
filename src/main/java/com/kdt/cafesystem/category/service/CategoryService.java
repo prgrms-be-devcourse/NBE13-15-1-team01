@@ -1,0 +1,97 @@
+package com.kdt.cafesystem.category.service;
+
+import com.kdt.cafesystem.category.dto.CategoryRequestDto;
+import com.kdt.cafesystem.category.dto.CategoryResponseDto;
+import com.kdt.cafesystem.category.entity.Category;
+import com.kdt.cafesystem.category.repository.CategoryRepo;
+import com.kdt.cafesystem.global.ApiException;
+import com.kdt.cafesystem.global.ErrorCode;
+import com.kdt.cafesystem.menu.repository.MenuRepo;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@Transactional
+public class CategoryService {
+
+    private final CategoryRepo categoryRepo;
+    private final MenuRepo menuRepo;
+
+    public CategoryService(CategoryRepo categoryRepo, MenuRepo menuRepo) {
+        this.categoryRepo = categoryRepo;
+        this.menuRepo = menuRepo;
+    }
+
+
+    @Transactional(readOnly = true)
+    public List<CategoryResponseDto> findAll() {
+        List<Category> categories = categoryRepo.findAllByOrderByIdAsc();
+        List<CategoryResponseDto> result = new ArrayList<>();
+        for (Category category : categories) {
+            result.add(toDto(category));
+        }
+        return result;
+    }
+
+    // A02
+    @Transactional(readOnly = true)
+    public CategoryResponseDto find(Long id) {
+        return toDto(getOrThrow(id));
+    }
+
+    // A03
+    public CategoryResponseDto create(CategoryRequestDto req) {
+        String name = req.name().trim();
+        if (categoryRepo.findByName(name).isPresent()) {
+            throw new ApiException(ErrorCode.CATEGORY_NAME_DUPLICATED);
+        }
+        try {
+            Category saved = categoryRepo.saveAndFlush(new Category(name));
+            return toDto(saved);
+        } catch (DataIntegrityViolationException e) {
+            throw new ApiException(ErrorCode.CATEGORY_NAME_DUPLICATED);
+        }
+    }
+
+    // A04: filter + ifPresent 람다 → Optional을 꺼내서 if문
+    public CategoryResponseDto update(Long id, CategoryRequestDto req) {
+        Category category = getOrThrow(id);
+        String name = req.name().trim();
+
+        Optional<Category> found = categoryRepo.findByName(name);
+        if (found.isPresent() && !found.get().getId().equals(id)) {
+            throw new ApiException(ErrorCode.CATEGORY_NAME_DUPLICATED);
+        }
+
+        category.setName(name);
+        return toDto(category);
+    }
+
+    // A05
+    public void delete(Long id) {
+        Category category = getOrThrow(id);
+        if (menuRepo.existsByCategoryId(id)) {
+            throw new ApiException(ErrorCode.CATEGORY_IN_USE);
+        }
+        categoryRepo.delete(category);
+    }
+
+    // orElseThrow(() -> ...) 람다 → Optional 꺼내서 if문
+    private Category getOrThrow(Long id) {
+        Optional<Category> found = categoryRepo.findById(id);
+        if (found.isEmpty()) {
+            throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND);
+        }
+        return found.get();
+    }
+
+    private CategoryResponseDto toDto(Category c) {
+        return new CategoryResponseDto(c.getId(), c.getName());
+    }
+}
+
