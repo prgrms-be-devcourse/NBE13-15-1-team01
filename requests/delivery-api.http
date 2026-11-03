@@ -1,0 +1,13 @@
+@baseUrl = http://127.0.0.1:8080/api/v1
+
+### A14 배송 묶음 (정상) → 200
+# 준비: 9-3의 SQL로 넣은 2026-11-03 주문
+# 기대: a14@example.com 묶음 1개, orderIds = [주문1, 주문2], orderCount 2,
+#       totalQuantity 4, totalAmount 22000, 항목 원두A 3개 15000 / 원두B 1개 7000
+GET {{baseUrl}}/delivery-batches?shippingDate=2026-11-03
+
+### A14 주문이 없는 날 → 200 []
+GET {{baseUrl}}/delivery-batches?shippingDate=2030-01-01
+
+### A14 오류: 범위 밖 날짜 → 400 VALIDATION_ERROR, fieldErrors.shippingDate
+GET {{baseUrl}}/delivery-batches?shippingDate=1999-12-31
