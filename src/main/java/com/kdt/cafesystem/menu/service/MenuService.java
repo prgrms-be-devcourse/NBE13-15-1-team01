@@ -99,10 +99,27 @@ public class MenuService {
         return toDtoList(menuRepo.findByAvailableTrueOrderByIdAsc());
     }
 
-    // A20 메뉴명 검색: 결과가 없으면 []
+    // A20 메뉴명 검색
     @Transactional(readOnly = true)
     public List<MenuResponseDto> search(String keyword) {
-        return toDtoList(menuRepo.findByNameContainingOrderByIdAsc(keyword));
+
+        // 검색어가 null이면 오류
+        if (keyword == null) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR);
+        }
+
+        // 검색어 앞뒤 공백 제거
+        String trimmedKeyword = keyword.trim();
+
+        // 검색어 길이 검증
+        if (trimmedKeyword.isEmpty() || trimmedKeyword.length() > 100) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR);
+        }
+
+        // 메뉴 검색 후 DTO로 변환
+        return toDtoList(
+                menuRepo.findByNameContainingOrderByIdAsc(trimmedKeyword)
+        );
     }
 
     // A21 판매 여부 변경: available만 바꿈
