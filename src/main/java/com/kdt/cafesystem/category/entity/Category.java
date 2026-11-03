@@ -26,7 +26,8 @@ public class Category {
             orphanRemoval = true)
     private List<Menu> menus = new ArrayList<>();
 
-    protected Category() {}
+    protected Category() {
+    }
 
     public Category(String name) {
         this.name = name;
