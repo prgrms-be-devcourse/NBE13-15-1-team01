@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
  * (A09에서 메뉴가 수정돼도 과거 주문·배송 묶음·통계 값은 그대로)
  */
 @Entity
-@Table(name = "order_item")
+@Table(name = "order_items")   // schema.sql 기준
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class OrderItem {

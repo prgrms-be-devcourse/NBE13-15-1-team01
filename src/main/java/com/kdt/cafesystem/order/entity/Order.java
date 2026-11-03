@@ -63,8 +63,8 @@ public class Order {
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
 
-    /** 공백·줄바꿈 원본 보존 */
-    @Column(length = 200)
+    /** 공백·줄바꿈 원본 보존. schema.sql: NOT NULL DEFAULT '' */
+    @Column(nullable = false, length = 200)
     private String memo;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -77,7 +77,7 @@ public class Order {
         order.email = email;
         order.address = address;
         order.postcode = postcode;
-        order.memo = memo;
+        order.memo = memo == null ? "" : memo;   // 메모 없으면 빈 문자열
         order.createdAt = createdAt;
         order.shippingDate = shippingDate;
         order.status = OrderStatus.PLACED;
@@ -101,7 +101,7 @@ public class Order {
     }
 
     public void changeMemo(String memo) {
-        this.memo = memo;
+        this.memo = memo == null ? "" : memo;
     }
 
     /** 같은 배송지인지 (주소·우편번호 모두 일치) */
