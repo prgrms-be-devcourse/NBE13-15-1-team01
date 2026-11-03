@@ -1,0 +1,24 @@
+@baseUrl = http://127.0.0.1:8080/api/v1
+
+### A17 접수일별 주문 통계 (정상) → 200
+# 준비: A14 테스트 데이터 (11-03 접수 주문 3건: PLACED 2, CANCELLED 1)
+# 기대: orderCount 3, placedOrderCount 2, cancelledOrderCount 1, totalQuantity 4, totalAmount 22000
+GET {{baseUrl}}/statistics/orders?date=2026-11-03
+
+### A17 주문이 없는 날 → 200, 모든 숫자 0
+GET {{baseUrl}}/statistics/orders?date=2030-01-01
+
+### A17 오류: 범위 밖 날짜 → 400 VALIDATION_ERROR, fieldErrors.date
+GET {{baseUrl}}/statistics/orders?date=2100-01-01
+
+
+### 비교 1) A17 11-03 통계 → 주문4가 포함되어야 함 (접수일 11-03)
+# 기대: orderCount 4, placedOrderCount 3, cancelledOrderCount 1, totalQuantity 6, totalAmount 36000
+GET {{baseUrl}}/statistics/orders?date=2026-11-03
+
+### 비교 2) A17 11-04 통계 → 주문4가 없어야 함 (11-04에 접수된 주문 없음)
+# 기대: 모든 숫자 0
+GET {{baseUrl}}/statistics/orders?date=2026-11-04
+
+### 비교 3) A14 11-04 배송 묶음 → 주문4가 나와야 함 (배송일 11-04)
+GET {{baseUrl}}/delivery-batches?shippingDate=2026-11-04

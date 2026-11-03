@@ -1,0 +1,115 @@
+package com.kdt.cafesystem.statistics.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+
+import com.kdt.cafesystem.menu.entity.Menu;
+import com.kdt.cafesystem.order.entity.Order;
+import com.kdt.cafesystem.order.entity.OrderItem;
+import com.kdt.cafesystem.order.repository.OrderRepository;
+import com.kdt.cafesystem.statistics.dto.OrderStatisticsResponse;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
+
+/**
+ * DB 없이 통계 계산만 검증한다.
+ * Repository는 가짜(mock)로 만들고, 돌려줄 주문은 자바 코드로 직접 만든다.
+ */
+class StatisticsServiceTest {
+
+    private static final LocalDate DATE = LocalDate.of(2026, 11, 3);
+
+    private final OrderRepository orderRepository = mock(OrderRepository.class);
+    private final StatisticsService statisticsService = new StatisticsService(orderRepository);
+
+    private final Menu columbia = menu(1L, "Columbia Nariñó", 5000);
+    private final Menu brazil = menu(2L, "Brazil Serra Do Caparaó", 7000);
+
+    @Test
+    @DisplayName("A17: 접수일의 주문 수와 PLACED 주문의 수량·금액 합계를 반환한다")
+    void orderStatistics() {
+        Order order101 = order(101L, OrderItem.of(columbia, 2), OrderItem.of(brazil, 1)); // 17,000원
+        Order order102 = order(102L, OrderItem.of(columbia, 1));                          //  5,000원
+        givenOrdersReceivedOn(DATE, order101, order102);
+
+        OrderStatisticsResponse result = statisticsService.getOrderStatistics(DATE);
+
+        assertThat(result.date()).isEqualTo(DATE);
+        assertThat(result.orderCount()).isEqualTo(2);
+        assertThat(result.placedOrderCount()).isEqualTo(2);
+        assertThat(result.cancelledOrderCount()).isZero();
+        assertThat(result.totalQuantity()).isEqualTo(4);
+        assertThat(result.totalAmount()).isEqualTo(22000);
+    }
+
+    @Test
+    @DisplayName("A17: 취소한 주문은 건수에는 포함하고 수량·금액에서는 뺀다 (명세서 예시: 주문 101 취소)")
+    void cancelledOrderExcludedFromTotals() {
+        Order order101 = order(101L, OrderItem.of(columbia, 2), OrderItem.of(brazil, 1));
+        Order order102 = order(102L, OrderItem.of(columbia, 1));
+        order101.cancel(LocalDateTime.of(2026, 11, 3, 13, 30));
+        givenOrdersReceivedOn(DATE, order101, order102);
+
+        OrderStatisticsResponse result = statisticsService.getOrderStatistics(DATE);
+
+        assertThat(result.orderCount()).isEqualTo(2);
+        assertThat(result.placedOrderCount()).isEqualTo(1);
+        assertThat(result.cancelledOrderCount()).isEqualTo(1);
+        assertThat(result.totalQuantity()).isEqualTo(1);
+        assertThat(result.totalAmount()).isEqualTo(5000);
+    }
+
+    @Test
+    @DisplayName("A17: 주문이 없는 날도 조회한 날짜와 0으로 채운 객체를 반환한다")
+    void noOrders() {
+        givenOrdersReceivedOn(DATE);
+
+        OrderStatisticsResponse result = statisticsService.getOrderStatistics(DATE);
+
+        assertThat(result).isEqualTo(new OrderStatisticsResponse(DATE, 0, 0, 0, 0, 0));
+    }
+
+    @Test
+    @DisplayName("A17: 접수일 범위를 그날 00:00:00 이상 ~ 다음 날 00:00:00 미만으로 조회한다")
+    void queryRangeIsWholeDay() {
+        Order order = order(101L, OrderItem.of(columbia, 1));
+        given(orderRepository.findByCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                LocalDateTime.of(2026, 11, 3, 0, 0, 0),
+                LocalDateTime.of(2026, 11, 4, 0, 0, 0)))
+                .willReturn(List.of(order));
+
+        OrderStatisticsResponse result = statisticsService.getOrderStatistics(DATE);
+
+        // 범위를 잘못 만들면 가짜 Repository가 빈 목록을 돌려줘서 0이 나온다
+        assertThat(result.orderCount()).isEqualTo(1);
+    }
+
+    // ===== 테스트 데이터 만들기 =====
+
+    private void givenOrdersReceivedOn(LocalDate date, Order... orders) {
+        given(orderRepository.findByCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                date.atStartOfDay(), date.plusDays(1).atStartOfDay()))
+                .willReturn(List.of(orders));
+    }
+
+    private static Menu menu(Long id, String name, int price) {
+        Menu menu = new Menu(name, price, "", null);
+        ReflectionTestUtils.setField(menu, "id", id);  // DB가 없어서 ID를 직접 넣는다
+        return menu;
+    }
+
+    private Order order(Long id, OrderItem... items) {
+        Order order = Order.create("buyer@example.com", "서울시 실습로 10 101호", "01234", "",
+                LocalDateTime.of(2026, 11, 3, 13, 0), DATE);
+        for (OrderItem item : items) {
+            order.addItem(item);
+        }
+        ReflectionTestUtils.setField(order, "id", id);
+        return order;
+    }
+}
