@@ -41,7 +41,11 @@ public class CategoryService {
     // A02
     @Transactional(readOnly = true)
     public CategoryResponseDto find(Long id) {
-        return toDto(getOrThrow(id));
+        Optional<Category> foundCategory = categoryRepo.findById(id);
+        if (foundCategory.isEmpty()) {
+            throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND);
+        }
+        return toDto(foundCategory.get());
     }
 
     // A03
@@ -58,9 +62,13 @@ public class CategoryService {
         }
     }
 
-    // A04: filter + ifPresent 람다 → Optional을 꺼내서 if문
+    // A04
     public CategoryResponseDto update(Long id, CategoryRequestDto req) {
-        Category category = getOrThrow(id);
+        Optional<Category> foundCategory = categoryRepo.findById(id);
+        if (foundCategory.isEmpty()) {
+            throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND);
+        }
+        Category category = foundCategory.get();
         String name = req.name().trim();
 
         Optional<Category> found = categoryRepo.findByName(name);
@@ -74,20 +82,15 @@ public class CategoryService {
 
     // A05
     public void delete(Long id) {
-        Category category = getOrThrow(id);
+        Optional<Category> foundCategory = categoryRepo.findById(id);
+        if (foundCategory.isEmpty()) {
+            throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND);
+        }
+        Category category = foundCategory.get();
         if (menuRepo.existsByCategoryId(id)) {
             throw new ApiException(ErrorCode.CATEGORY_IN_USE);
         }
         categoryRepo.delete(category);
-    }
-
-    // orElseThrow(() -> ...) 람다 → Optional 꺼내서 if문
-    private Category getOrThrow(Long id) {
-        Optional<Category> found = categoryRepo.findById(id);
-        if (found.isEmpty()) {
-            throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND);
-        }
-        return found.get();
     }
 
     private CategoryResponseDto toDto(Category c) {

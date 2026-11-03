@@ -16,7 +16,8 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false, length = 30)
+    @Column(unique = true, nullable = false, length = 30,
+            columnDefinition = "varchar(30) collate utf8mb4_bin")
     private String name;
 
     @OneToMany(mappedBy = "category",
