@@ -7,6 +7,13 @@ import java.util.List;
 
 public interface MenuRepo extends JpaRepository<Menu,Long> {
 
-    List<Menu> findByCategoryId(Long categoryId);       // 카테고리별 메뉴 목록
-    List<Menu> findByAvailableTrue();                   //판매 가능 여부
+    boolean existsByCategoryId(Long id);
+
+    List<Menu> findAllByOrderByIdAsc();
+
+    List<Menu> findByCategoryIdOrderByIdAsc(Long categoryId);
+
+    List<Menu> findByAvailableTrueOrderByIdAsc();
+
+    List<Menu> findByNameContainingOrderByIdAsc(String keyword);
 }
