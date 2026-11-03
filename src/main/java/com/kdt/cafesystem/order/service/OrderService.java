@@ -3,7 +3,7 @@ package com.kdt.cafesystem.order.service;
 import com.kdt.cafesystem.global.exception.BusinessException;
 import com.kdt.cafesystem.global.exception.ErrorCode;
 import com.kdt.cafesystem.menu.entity.Menu;
-import com.kdt.cafesystem.menu.repository.MenuRepository;
+import com.kdt.cafesystem.menu.repository.MenuRepo;
 import com.kdt.cafesystem.order.dto.MemoUpdateRequest;
 import com.kdt.cafesystem.order.dto.OrderCreateRequest;
 import com.kdt.cafesystem.order.dto.OrderResponse;
@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final MenuRepository menuRepository;
+    private final MenuRepo menuRepository;
     private final ShippingPolicy shippingPolicy;
     private final Clock clock;
 

@@ -1,11 +1,12 @@
 package com.kdt.cafesystem.order.dto;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 /**
- * 주문 항목 요청. 수량 최대값이 명세서에 있으면 @Max 추가.
+ * 주문 항목 요청. 수량 1~20 (schema.sql 기준).
  */
 public record OrderItemRequest(
 
@@ -14,7 +15,8 @@ public record OrderItemRequest(
         Long menuId,
 
         @NotNull(message = "수량은 필수입니다.")
-        @Min(value = 1, message = "수량은 1 이상입니다.")
+        @Min(value = 1, message = "수량은 1~20입니다.")
+        @Max(value = 20, message = "수량은 1~20입니다.")
         Integer quantity
 ) {
 }
