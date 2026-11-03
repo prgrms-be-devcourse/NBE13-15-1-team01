@@ -1,3 +1,22 @@
 spring:
   application:
     name: cafeSystem
+  datasource:
+    url: jdbc:mysql://localhost:3306/cafe_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: kdtpass
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    defer-datasource-initialization: true
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  sql:
+    init:
+      #SpringBoot가 자동으로 optional:classpath*:schema.sql 경로에 schema 파일을 감지하여 자동으로 실행
+      mode: always
+  jackson:
+    time-zone: Asia/Seoul
