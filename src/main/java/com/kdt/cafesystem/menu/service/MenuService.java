@@ -2,8 +2,8 @@ package com.kdt.cafesystem.menu.service;
 
 import com.kdt.cafesystem.category.entity.Category;
 import com.kdt.cafesystem.category.repository.CategoryRepo;
-import com.kdt.cafesystem.global.ApiException;
-import com.kdt.cafesystem.global.ErrorCode;
+import com.kdt.cafesystem.global.exception.BusinessException;
+import com.kdt.cafesystem.global.exception.ErrorCode;
 import com.kdt.cafesystem.menu.dto.MenuAvailabilityRequestDto;
 import com.kdt.cafesystem.menu.dto.MenuRequestDto;
 import com.kdt.cafesystem.menu.dto.MenuResponseDto;
@@ -39,7 +39,7 @@ public class MenuService {
     public MenuResponseDto find(Long id) {
         Optional<Menu> foundMenu = menuRepo.findById(id);
         if (foundMenu.isEmpty()) {
-            throw new ApiException(ErrorCode.MENU_NOT_FOUND);
+            throw new BusinessException(ErrorCode.MENU_NOT_FOUND);
         }
         return toDto(foundMenu.get());
     }
@@ -49,7 +49,7 @@ public class MenuService {
     public List<MenuResponseDto> findByCategory(Long categoryId) {
         Optional<Category> foundCategory = categoryRepo.findById(categoryId);
         if (foundCategory.isEmpty()) {
-            throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND);
+            throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
         return toDtoList(menuRepo.findByCategoryIdOrderByIdAsc(categoryId));
     }
@@ -58,7 +58,7 @@ public class MenuService {
     public MenuResponseDto create(MenuRequestDto req) {
         Optional<Category> foundCategory = categoryRepo.findById(req.categoryId());
         if (foundCategory.isEmpty()) {
-            throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND);
+            throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
         Menu menu = new Menu(req.name().trim(), req.price(), req.description(), foundCategory.get());
         return toDto(menuRepo.save(menu));
@@ -68,11 +68,11 @@ public class MenuService {
     public MenuResponseDto update(Long id, MenuRequestDto req) {
         Optional<Menu> foundMenu = menuRepo.findById(id);
         if (foundMenu.isEmpty()) {
-            throw new ApiException(ErrorCode.MENU_NOT_FOUND);
+            throw new BusinessException(ErrorCode.MENU_NOT_FOUND);
         }
         Optional<Category> foundCategory = categoryRepo.findById(req.categoryId());
         if (foundCategory.isEmpty()) {
-            throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND);
+            throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
 
         Menu menu = foundMenu.get();
@@ -87,7 +87,7 @@ public class MenuService {
     public void delete(Long id) {
         Optional<Menu> foundMenu = menuRepo.findById(id);
         if (foundMenu.isEmpty()) {
-            throw new ApiException(ErrorCode.MENU_NOT_FOUND);
+            throw new BusinessException(ErrorCode.MENU_NOT_FOUND);
         }
         // TODO: Order 쪽이 합쳐지면 MENU_IN_USE 검사 추가
         menuRepo.delete(foundMenu.get());
@@ -109,7 +109,7 @@ public class MenuService {
     public MenuResponseDto changeAvailability(Long id, MenuAvailabilityRequestDto req) {
         Optional<Menu> foundMenu = menuRepo.findById(id);
         if (foundMenu.isEmpty()) {
-            throw new ApiException(ErrorCode.MENU_NOT_FOUND);
+            throw new BusinessException(ErrorCode.MENU_NOT_FOUND);
         }
         Menu menu = foundMenu.get();
         menu.setAvailable(req.available());
