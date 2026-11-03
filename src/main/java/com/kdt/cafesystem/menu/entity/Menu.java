@@ -12,7 +12,8 @@ public class Menu {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name", nullable = false, unique = true, length = 100)
+    @Column(name = "name", nullable = false, unique = true, length = 100,
+            columnDefinition = "varchar(100) collate utf8mb4_bin")
     private String name;
 
     @Column(name = "price", nullable = false)
