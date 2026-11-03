@@ -14,6 +14,7 @@ import com.kdt.cafesystem.order.repository.OrderRepository;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -60,7 +61,7 @@ public class OrderService {
             return OrderResponse.from(order);
         }
 
-        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime now = now();
         if (!shippingPolicy.isCancellable(order.getShippingDate(), now)) {
             throw new BusinessException(ErrorCode.ORDER_NOT_CANCELLABLE);
         }
@@ -106,7 +107,7 @@ public class OrderService {
         }
 
         // 3) 409 — 같은 이메일·배송일의 기존 접수 주문과 배송지 일치 확인
-        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime now = now();
         LocalDate shippingDate = shippingPolicy.shippingDateOf(now);
         orderRepository.findFirstByEmailAndShippingDateAndStatus(email, shippingDate, OrderStatus.PLACED)
                 .filter(previous -> !previous.hasSameDestination(address, postcode))
@@ -120,6 +121,15 @@ public class OrderService {
             order.addItem(OrderItem.of(menus.get(i), lines.get(i).quantity()));
         }
         return OrderResponse.from(orderRepository.save(order));
+    }
+
+    /**
+     * 현재 서울 시각(초 단위로 절사).
+     * MySQL DATETIME은 소수점 초를 반올림하므로, 13:59:59.7이 14:00:00으로 저장되는 것을 막는다.
+     * 배송일 계산과 저장값이 항상 같은 시각을 기준으로 하게 된다.
+     */
+    private LocalDateTime now() {
+        return LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS);
     }
 
     private Order getOrder(Long orderId) {
