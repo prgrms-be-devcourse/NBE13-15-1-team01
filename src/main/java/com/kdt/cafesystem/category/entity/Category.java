@@ -20,10 +20,7 @@ public class Category {
             columnDefinition = "varchar(30) collate utf8mb4_bin")
     private String name;
 
-    @OneToMany(mappedBy = "category",
-            fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL,
-            orphanRemoval = true)
+    @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
     private List<Menu> menus = new ArrayList<>();
 
     protected Category() {
