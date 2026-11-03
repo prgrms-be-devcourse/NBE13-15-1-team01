@@ -1,0 +1,54 @@
+### =========================================================
+### 주문 API (팀원 2 담당) — 나중에 requests/api-check.http 에 합칠 것
+### 실행 순서: 위에서 아래로. 준비 데이터: 초기 메뉴(id 1, 2)가 판매 중이어야 함
+### =========================================================
+@baseUrl = http://127.0.0.1:8080/api/v1
+
+### A11 주문 접수 (정상) → 201
+# @name createOrder
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "email": "buyer@example.com",
+  "address": "서울시 강남구 테헤란로 1",
+  "postcode": "06234",
+  "memo": "문 앞에 놓아주세요",
+  "items": [
+    { "menuId": 1, "quantity": 2 },
+    { "menuId": 2, "quantity": 1 }
+  ]
+}
+
+> {% client.global.set("orderId", response.body.id); %}
+
+### A12 이메일별 주문 목록 → 200
+GET {{baseUrl}}/orders?email=buyer@example.com
+
+### A13 주문 상세 → 200
+GET {{baseUrl}}/orders/{{orderId}}
+
+### A22 주문 메모 수정 → 200
+PUT {{baseUrl}}/orders/{{orderId}}/memo
+Content-Type: application/json
+
+{
+  "memo": "경비실에 맡겨주세요"
+}
+
+### A23 재주문 → 201 (현재 메뉴 가격으로 새 주문)
+POST {{baseUrl}}/orders/{{orderId}}/reorder
+
+### A16 주문 취소 → 200 (배송일 14:00 이후면 409 ORDER_NOT_CANCELLABLE)
+POST {{baseUrl}}/orders/{{orderId}}/cancel
+
+### [오류 1] 잘못된 이메일 형식 → 400 VALIDATION_ERROR (fieldErrors.email)
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "email": "buyer@@example",
+  "address": "서울시 강남구 테헤란로 1",
+  "postcode": "06234",
+  "items": [{ "menuId": 1, "quantity": 1 }]
+}
