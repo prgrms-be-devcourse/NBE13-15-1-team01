@@ -50,6 +50,8 @@ public class CategoryService {
 
     // A03
     public CategoryResponseDto create(CategoryRequestDto req) {
+        validate(req);
+
         String name = req.name().trim();
         if (categoryRepo.findByName(name).isPresent()) {
             throw new BusinessException(ErrorCode.CATEGORY_NAME_DUPLICATED);
@@ -68,6 +70,9 @@ public class CategoryService {
         if (foundCategory.isEmpty()) {
             throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
+
+        validate(req);
+
         Category category = foundCategory.get();
         String name = req.name().trim();
 
@@ -95,6 +100,18 @@ public class CategoryService {
 
     private CategoryResponseDto toDto(Category c) {
         return new CategoryResponseDto(c.getId(), c.getName());
+    }
+
+    // 카테고리명 검증
+    private void validate(CategoryRequestDto req) {
+        if (req.name() == null) throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+
+        String name = req.name().trim();
+
+        // 카테고리명은 앞뒤 공백 제거 후 1~30자
+        if (name.isEmpty() || name.length() > 30) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+        }
     }
 }
 
