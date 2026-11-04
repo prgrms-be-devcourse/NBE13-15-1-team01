@@ -3,6 +3,8 @@ package com.kdt.cafesystem.category.controller;
 import com.kdt.cafesystem.category.dto.CategoryRequestDto;
 import com.kdt.cafesystem.category.dto.CategoryResponseDto;
 import com.kdt.cafesystem.category.service.CategoryService;
+import com.kdt.cafesystem.menu.dto.MenuResponseDto;
+import com.kdt.cafesystem.menu.service.MenuService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,9 +17,11 @@ import java.util.List;
 public class CategoryController {
 
     private final CategoryService categoryService;
+    private final MenuService menuService;
 
-    public CategoryController(CategoryService categoryService) {
+    public CategoryController(CategoryService categoryService, MenuService menuService) {
         this.categoryService = categoryService;
+        this.menuService = menuService;
     }
 
     // A01 카테고리 목록 → 200
@@ -52,5 +56,11 @@ public class CategoryController {
     public ResponseEntity<Void> delete(@PathVariable Long categoryId) {
         categoryService.delete(categoryId);
         return ResponseEntity.noContent().build();
+    }
+
+    // A15 카테고리별 메뉴 → 200
+    @GetMapping("/{categoryId}/menus")
+    public ResponseEntity<List<MenuResponseDto>> findAllByCategory(@PathVariable Long categoryId) {
+        return ResponseEntity.ok(menuService.findByCategory(categoryId));
     }
 }

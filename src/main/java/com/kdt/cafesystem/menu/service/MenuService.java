@@ -44,7 +44,7 @@ public class MenuService {
         return toDto(foundMenu.get());
     }
 
-    // 카테고리별 목록
+    // A15 카테고리별 목록
     @Transactional(readOnly = true)
     public List<MenuResponseDto> findByCategory(Long categoryId) {
         Optional<Category> foundCategory = categoryRepo.findById(categoryId);
