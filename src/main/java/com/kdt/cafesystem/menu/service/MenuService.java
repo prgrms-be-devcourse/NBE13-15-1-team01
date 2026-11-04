@@ -9,6 +9,7 @@ import com.kdt.cafesystem.menu.dto.MenuRequestDto;
 import com.kdt.cafesystem.menu.dto.MenuResponseDto;
 import com.kdt.cafesystem.menu.entity.Menu;
 import com.kdt.cafesystem.menu.repository.MenuRepo;
+import com.kdt.cafesystem.order.repository.OrderItemRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,10 +23,11 @@ public class MenuService {
 
     private final MenuRepo menuRepo;
     private final CategoryRepo categoryRepo;
-
-    public MenuService(MenuRepo menuRepo, CategoryRepo categoryRepo) {
+    private final OrderItemRepository orderItemRepository;
+    public MenuService(MenuRepo menuRepo, CategoryRepo categoryRepo, OrderItemRepository orderItemRepository) {
         this.menuRepo = menuRepo;
         this.categoryRepo = categoryRepo;
+        this.orderItemRepository = orderItemRepository;
     }
 
     // A06
@@ -91,10 +93,15 @@ public class MenuService {
     // A10
     public void delete(Long id) {
         Optional<Menu> foundMenu = menuRepo.findById(id);
+
+        //찾는 메뉴가 없습니다
         if (foundMenu.isEmpty()) {
             throw new BusinessException(ErrorCode.MENU_NOT_FOUND);
         }
-        // TODO: Order 쪽이 합쳐지면 MENU_IN_USE 검사 추가
+        if(orderItemRepository.existsByMenuId(id)){
+            throw new BusinessException(ErrorCode.MENU_IN_USE);
+        }
+
         menuRepo.delete(foundMenu.get());
     }
 
