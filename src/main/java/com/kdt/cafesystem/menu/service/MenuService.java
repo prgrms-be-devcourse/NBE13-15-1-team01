@@ -98,7 +98,7 @@ public class MenuService {
         if (foundMenu.isEmpty()) {
             throw new BusinessException(ErrorCode.MENU_NOT_FOUND);
         }
-        if(orderItemRepository.existsByMenuId(id)){
+        if(orderItemRepository.existsByMenu_Id(id)){
             throw new BusinessException(ErrorCode.MENU_IN_USE);
         }
 
