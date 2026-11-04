@@ -1,0 +1,47 @@
+
+@baseUrl = http://127.0.0.1:8080/api/v1
+@categoryId = 1
+@menuId = 1
+@orderId = 1
+@email = buyer@example.com
+@date = 2026-11-03
+
+### A01 카테고리 목록 → 200
+GET http://localhost:8080/api/v1/categories
+Content-Type: application/json
+
+### A02 카테고리 상세 → 200
+GET http://localhost:8080/api/v1/categories/{{categoryId}}
+Content-Type: application/json
+
+### A03 카테고리 등록 → 201 + Location
+POST http://localhost:8080/api/v1/categories
+Content-Type: application/json
+
+{
+  "name": "예시카테고리"
+}
+
+### A04 카테고리 수정 → 200
+PUT http://localhost:8080/api/v1/categories/{{categoryId}}
+Content-Type: application/json
+
+{
+  "name": "싱글오리진수정"
+}
+
+### A05 카테고리 삭제 → 204, 빈 본문
+DELETE http://localhost:8080/api/v1/categories/2
+Content-Type: application/json
+
+### A15 카테고리별 메뉴 → 200
+GET http://localhost:8080/api/v1/categories/{{categoryId}}/menus
+
+
+### A03 오류: 카테고리명 중복 → 409 CATEGORY_NAME_DUPLICATED
+POST http://localhost:8080/api/v1/categories
+Content-Type: application/json
+
+{
+  "name": "싱글오리진"
+}
