@@ -60,6 +60,9 @@ public class MenuService {
         if (foundCategory.isEmpty()) {
             throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
+
+        validate(req);
+
         Menu menu = new Menu(req.name().trim(), req.price(), req.description(), foundCategory.get());
         return toDto(menuRepo.save(menu));
     }
@@ -74,6 +77,8 @@ public class MenuService {
         if (foundCategory.isEmpty()) {
             throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
+
+        validate(req);
 
         Menu menu = foundMenu.get();
         menu.setCategory(foundCategory.get());
@@ -143,5 +148,23 @@ public class MenuService {
     private MenuResponseDto toDto(Menu m) {
         return new MenuResponseDto(m.getId(), m.getCategory().getId(),
                 m.getName(), m.getPrice(), m.getDescription(), m.isAvailable());
+    }
+
+    // 메뉴명, 가격, 설명 검증
+    private void validate(MenuRequestDto req) {
+        String name = req.name().trim();
+
+        // 메뉴명은 앞뒤 공백 제거 후 1~100자
+        if (name.isEmpty() || name.length() > 100) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+        }
+        // 가격은 정수 1~1,000,000원
+        if (req.price() < 1 || req.price() > 1_000_000) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+        }
+        // 설명은 앞뒤 공백 제거 후 300자 이하
+        if (req.description().trim().length() > 300) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+        }
     }
 }
