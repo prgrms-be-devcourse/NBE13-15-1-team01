@@ -4,6 +4,7 @@ import com.kdt.cafesystem.order.entity.Order;
 import com.kdt.cafesystem.order.entity.OrderItem;
 import com.kdt.cafesystem.order.entity.OrderStatus;
 import com.kdt.cafesystem.order.repository.OrderRepository;
+import com.kdt.cafesystem.statistics.dto.CustomerStatisticsResponse;
 import com.kdt.cafesystem.statistics.dto.MenuStatisticsResponse;
 import com.kdt.cafesystem.statistics.dto.OrderStatisticsResponse;
 import java.time.LocalDate;
@@ -12,6 +13,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,7 +76,32 @@ public class StatisticsService {
                 .toList();
     }
 
-    // 서울 기준 접수일이 date인 주문(취소 포함): date 00:00:00 이상 ~ 다음 날 00:00:00 미만
+    // A24 접수일별 고객 통계
+    public List<CustomerStatisticsResponse> getCustomerStatistics(LocalDate date) {
+        List<Order> orders = findOrdersReceivedOn(date);
+
+        // 이메일별로 묶기. TreeMap이라 이메일 오름차순으로 정렬
+        Map<String, List<Order>> ordersByEmail = orders.stream()
+                .collect(Collectors.groupingBy(Order::getEmail, TreeMap::new, Collectors.toList()));
+
+        // 고객마다 A17과 같은 숫자 5개를 계산 (주문을 모두 취소한 고객도 포함)
+        return ordersByEmail.entrySet().stream()
+                .map(entry -> {
+                    String email = entry.getKey();
+                    List<Order> ordersOfEmail = entry.getValue();
+                    return new CustomerStatisticsResponse(
+                            date,
+                            email,
+                            ordersOfEmail.size(),
+                            countByStatus(ordersOfEmail, OrderStatus.PLACED),
+                            countByStatus(ordersOfEmail, OrderStatus.CANCELLED),
+                            totalQuantityOfPlaced(ordersOfEmail),
+                            totalAmountOfPlaced(ordersOfEmail));
+                })
+                .toList();
+    }
+
+    // 서울 기준 접수일이 date인 주문(취소 포함)
     private List<Order> findOrdersReceivedOn(LocalDate date) {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.plusDays(1).atStartOfDay();

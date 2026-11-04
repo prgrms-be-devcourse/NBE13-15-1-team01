@@ -1,6 +1,7 @@
 package com.kdt.cafesystem.statistics.controller;
 
 import com.kdt.cafesystem.global.validation.AllowedDate;
+import com.kdt.cafesystem.statistics.dto.CustomerStatisticsResponse;
 import com.kdt.cafesystem.statistics.dto.MenuStatisticsResponse;
 import com.kdt.cafesystem.statistics.dto.OrderStatisticsResponse;
 import com.kdt.cafesystem.statistics.service.StatisticsService;
@@ -24,7 +25,7 @@ public class StatisticsController {
     @GetMapping("/orders")
     public OrderStatisticsResponse getOrderStatistics(
             @RequestParam
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @DateTimeFormat(pattern = "uuuu-MM-dd")
             @AllowedDate
             LocalDate date) {
         return statisticsService.getOrderStatistics(date);
@@ -34,10 +35,20 @@ public class StatisticsController {
     @GetMapping("/menus")
     public List<MenuStatisticsResponse> getMenuStatistics(
             @RequestParam
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @DateTimeFormat(pattern = "uuuu-MM-dd")
             @AllowedDate
             LocalDate date) {
         return statisticsService.getMenuStatistics(date);
+    }
+
+    // A24 접수일별 고객 통계 GET
+    @GetMapping("/customers")
+    public List<CustomerStatisticsResponse> getCustomerStatistics(
+            @RequestParam
+            @DateTimeFormat(pattern = "uuuu-MM-dd")
+            @AllowedDate
+            LocalDate date) {
+        return statisticsService.getCustomerStatistics(date);
     }
 
 }

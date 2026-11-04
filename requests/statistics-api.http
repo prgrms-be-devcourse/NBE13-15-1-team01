@@ -34,3 +34,14 @@ GET {{baseUrl}}/statistics/menus?date=2030-01-01
 
 ### A18 오류: 범위 밖 날짜 → 400 VALIDATION_ERROR, fieldErrors.date
 GET {{baseUrl}}/statistics/menus?date=1999-12-31
+
+### A24 접수일별 고객 통계 (정상) → 200
+# 준비: A14·A17·A18 테스트 데이터 (11-03 접수: a14@ 4건(취소 1), a18@ 1건)
+# 기대: a14@ 4건·PLACED 3·취소 1·수량 6·금액 36000 / a18@ 1건·PLACED 1·취소 0·수량 1·금액 6000
+GET {{baseUrl}}/statistics/customers?date=2026-11-03
+
+### A24 주문이 없는 날 → 200 []
+GET {{baseUrl}}/statistics/customers?date=2030-01-01
+
+### A24 오류: 범위 밖 날짜 → 400 VALIDATION_ERROR, fieldErrors.date
+GET {{baseUrl}}/statistics/customers?date=2100-01-01
