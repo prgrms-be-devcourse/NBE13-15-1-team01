@@ -1,9 +1,11 @@
 package com.kdt.cafesystem.statistics.controller;
 
 import com.kdt.cafesystem.global.validation.AllowedDate;
+import com.kdt.cafesystem.statistics.dto.MenuStatisticsResponse;
 import com.kdt.cafesystem.statistics.dto.OrderStatisticsResponse;
 import com.kdt.cafesystem.statistics.service.StatisticsService;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,4 +29,15 @@ public class StatisticsController {
             LocalDate date) {
         return statisticsService.getOrderStatistics(date);
     }
+
+    // A18 접수일별 메뉴 통계 GET
+    @GetMapping("/menus")
+    public List<MenuStatisticsResponse> getMenuStatistics(
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @AllowedDate
+            LocalDate date) {
+        return statisticsService.getMenuStatistics(date);
+    }
+
 }

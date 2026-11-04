@@ -1,6 +1,7 @@
 package com.kdt.cafesystem.statistics.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -8,6 +9,7 @@ import com.kdt.cafesystem.menu.entity.Menu;
 import com.kdt.cafesystem.order.entity.Order;
 import com.kdt.cafesystem.order.entity.OrderItem;
 import com.kdt.cafesystem.order.repository.OrderRepository;
+import com.kdt.cafesystem.statistics.dto.MenuStatisticsResponse;
 import com.kdt.cafesystem.statistics.dto.OrderStatisticsResponse;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -87,6 +89,70 @@ class StatisticsServiceTest {
 
         // 범위를 잘못 만들면 가짜 Repository가 빈 목록을 돌려줘서 0이 나온다
         assertThat(result.orderCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("A18: PLACED 주문의 항목을 메뉴별로 합산하고 메뉴 ID 오름차순으로 반환한다")
+    void menuStatistics() {
+        Order order101 = order(101L, OrderItem.of(brazil, 1), OrderItem.of(columbia, 2));
+        Order order102 = order(102L, OrderItem.of(columbia, 1));
+        givenOrdersReceivedOn(DATE, order101, order102);
+
+        List<MenuStatisticsResponse> result = statisticsService.getMenuStatistics(DATE);
+
+        assertThat(result)
+                .extracting(MenuStatisticsResponse::menuId,
+                        MenuStatisticsResponse::menuName,
+                        MenuStatisticsResponse::unitPrice,
+                        MenuStatisticsResponse::totalQuantity,
+                        MenuStatisticsResponse::totalAmount)
+                .containsExactly(
+                        tuple(1L, "Columbia Nariñó", 5000, 3L, 15000L),
+                        tuple(2L, "Brazil Serra Do Caparaó", 7000, 1L, 7000L));
+    }
+
+    @Test
+    @DisplayName("A18: 취소한 주문의 항목은 빼고, 취소 주문에만 있던 메뉴는 목록에 넣지 않는다")
+    void menuStatisticsExcludesCancelled() {
+        Order order101 = order(101L, OrderItem.of(columbia, 2), OrderItem.of(brazil, 1));
+        Order order102 = order(102L, OrderItem.of(columbia, 1));
+        order101.cancel(LocalDateTime.of(2026, 11, 3, 13, 30));
+        givenOrdersReceivedOn(DATE, order101, order102);
+
+        List<MenuStatisticsResponse> result = statisticsService.getMenuStatistics(DATE);
+
+        assertThat(result)
+                .extracting(MenuStatisticsResponse::menuId,
+                        MenuStatisticsResponse::totalQuantity,
+                        MenuStatisticsResponse::totalAmount)
+                .containsExactly(tuple(1L, 1L, 5000L));
+    }
+
+    @Test
+    @DisplayName("A18: 같은 메뉴라도 주문 당시 단가가 다르면 따로 집계하고 단가 오름차순으로 반환한다")
+    void menuStatisticsSplitsByUnitPrice() {
+        OrderItem cheap = OrderItem.of(columbia, 2);     // 5,000원일 때 주문
+        columbia.setPrice(6000);                          // 메뉴 가격 수정
+        OrderItem expensive = OrderItem.of(columbia, 1); // 6,000원일 때 주문
+        givenOrdersReceivedOn(DATE, order(101L, expensive), order(102L, cheap));
+
+        List<MenuStatisticsResponse> result = statisticsService.getMenuStatistics(DATE);
+
+        assertThat(result)
+                .extracting(MenuStatisticsResponse::unitPrice,
+                        MenuStatisticsResponse::totalQuantity,
+                        MenuStatisticsResponse::totalAmount)
+                .containsExactly(
+                        tuple(5000, 2L, 10000L),
+                        tuple(6000, 1L, 6000L));
+    }
+
+    @Test
+    @DisplayName("A18: 주문이 없는 날은 빈 목록을 반환한다")
+    void menuStatisticsEmpty() {
+        givenOrdersReceivedOn(DATE);
+
+        assertThat(statisticsService.getMenuStatistics(DATE)).isEmpty();
     }
 
     // ===== 테스트 데이터 만들기 =====
