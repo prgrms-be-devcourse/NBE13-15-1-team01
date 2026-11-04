@@ -56,12 +56,12 @@ public class MenuService {
 
     // A08
     public MenuResponseDto create(MenuRequestDto req) {
+        validate(req);
+
         Optional<Category> foundCategory = categoryRepo.findById(req.categoryId());
         if (foundCategory.isEmpty()) {
             throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
-
-        validate(req);
 
         Menu menu = new Menu(req.name().trim(), req.price(), req.description(), foundCategory.get());
         return toDto(menuRepo.save(menu));
@@ -69,6 +69,8 @@ public class MenuService {
 
     // A09
     public MenuResponseDto update(Long id, MenuRequestDto req) {
+        validate(req);
+
         Optional<Menu> foundMenu = menuRepo.findById(id);
         if (foundMenu.isEmpty()) {
             throw new BusinessException(ErrorCode.MENU_NOT_FOUND);
@@ -77,8 +79,6 @@ public class MenuService {
         if (foundCategory.isEmpty()) {
             throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
-
-        validate(req);
 
         Menu menu = foundMenu.get();
         menu.setCategory(foundCategory.get());
@@ -152,6 +152,11 @@ public class MenuService {
 
     // 메뉴명, 가격, 설명 검증
     private void validate(MenuRequestDto req) {
+        if (req.categoryId() == null || req.name() == null
+                || req.price() == null || req.description() == null) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+        }
+
         String name = req.name().trim();
 
         // 메뉴명은 앞뒤 공백 제거 후 1~100자

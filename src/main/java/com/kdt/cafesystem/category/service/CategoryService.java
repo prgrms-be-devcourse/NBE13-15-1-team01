@@ -104,6 +104,8 @@ public class CategoryService {
 
     // 카테고리명 검증
     private void validate(CategoryRequestDto req) {
+        if (req.name() == null) throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+
         String name = req.name().trim();
 
         // 카테고리명은 앞뒤 공백 제거 후 1~30자
