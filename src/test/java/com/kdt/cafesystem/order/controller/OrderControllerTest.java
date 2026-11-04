@@ -57,4 +57,43 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.code").value("ORDER_NOT_FOUND"))
                 .andExpect(jsonPath("$.fieldErrors").isEmpty());
     }
+
+    private String orderBody(String itemsJson) {
+        return """
+                {
+                  "email": "buyer@example.com",
+                  "address": "서울시 강남구 테헤란로 1",
+                  "postcode": "06234",
+                  "items": %s
+                }
+                """.formatted(itemsJson);
+    }
+
+    @Test
+    @DisplayName("A11: 서로 다른 메뉴가 10개를 넘으면 400 VALIDATION_ERROR와 fieldErrors.items를 반환한다")
+    void createOrder_tooManyItems() throws Exception {
+        String items = java.util.stream.IntStream.rangeClosed(1, 11)
+                .mapToObj(id -> "{ \"menuId\": " + id + ", \"quantity\": 1 }")
+                .collect(java.util.stream.Collectors.joining(",", "[", "]"));
+
+        mockMvc.perform(post("/api/v1/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(orderBody(items)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.fieldErrors.items").exists());
+    }
+
+    @Test
+    @DisplayName("A11: 같은 메뉴 ID가 중복되면 400 VALIDATION_ERROR와 fieldErrors.items를 반환한다")
+    void createOrder_duplicateMenuId() throws Exception {
+        String items = "[{ \"menuId\": 1, \"quantity\": 1 }, { \"menuId\": 1, \"quantity\": 2 }]";
+
+        mockMvc.perform(post("/api/v1/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(orderBody(items)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.fieldErrors.items").exists());
+    }
 }

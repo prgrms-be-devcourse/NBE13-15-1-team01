@@ -1,5 +1,6 @@
 package com.kdt.cafesystem.order.dto;
 
+import com.kdt.cafesystem.order.dto.validation.UniqueMenuIds;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -12,6 +13,7 @@ import java.util.List;
  * A11 주문 접수 요청.
  * - email, memo : 공백 제거 안 함(원본 그대로 검사·보존)
  * - address, postcode : 앞뒤 공백 제거 후 검사
+ * - items : 서로 다른 메뉴 1~10개, 메뉴 ID 중복 불가 (fieldErrors.items)
  */
 public record OrderCreateRequest(
 
@@ -32,7 +34,9 @@ public record OrderCreateRequest(
         @Size(max = 200, message = "메모는 200자 이하입니다.")
         String memo,
 
-        @NotEmpty(message = "주문 항목은 1개 이상이어야 합니다.")
+        @NotEmpty(message = "서로 다른 메뉴를 1~10개 선택해 주세요.")
+        @Size(max = 10, message = "서로 다른 메뉴를 1~10개 선택해 주세요.")
+        @UniqueMenuIds
         List<@Valid @NotNull OrderItemRequest> items
 ) {
     public OrderCreateRequest {
