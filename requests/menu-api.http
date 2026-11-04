@@ -7,14 +7,14 @@
 @keyword = Brazil Serra Do Caparaó
 
 ### A06 전체 메뉴 목록 ->200
-GET http://localhost:8080/api/v1/menus
+GET {{baseUrl}}/menus
 Content-Type: application/json
 
 ###A07 메뉴 상세 -> 200
-GET http://localhost:8080/api/v1/menus/2
+GET {{baseUrl}}/menus/2
 
 ### A08 메뉴 등록 -> 201
-POST http://localhost:8080/api/v1/menus
+POST {{baseUrl}}/menus
 Content-Type: application/json
 
 {
@@ -25,20 +25,20 @@ Content-Type: application/json
 }
 
 ### A09 메뉴 일반 수정 -> 200
-PUT http://localhost:8080/api/v1/menus/{{menuId}}
+PUT {{baseUrl}}/menus/{{menuId}}
 Content-Type: application/json
 
 ### A10 메뉴 삭제 -> 204
-DELETE http://localhost:8080/api/v1/menus/{{menuId}}
+DELETE {{baseUrl}}/menus/{{menuId}}
 
 ### A19 판매 중 메뉴 -> 200
-GET http://localhost:8080/api/v1/menus/available
+GET {{baseUrl}}/menus/available
 
 ### A20 메뉴명 검색 -> 200
-GET http://localhost:8080/api/v1/menus/search?keyword=={{keyword}}
+GET {{baseUrl}}/menus/search?keyword=={{keyword}}
 
 ### A21 판매 여부 변경 -> 200
-PUT http://localhost:8080/api/v1/menus/{{menuId}}/availability
+PUT {{baseUrl}}/menus/{{menuId}}/availability
 Content-Type: application/json
 
 {
@@ -46,7 +46,7 @@ Content-Type: application/json
 }
 
 ### A08 오류: 가격 범위 초과 → 400 VALIDATION_ERROR
-POST http://localhost:8080/api/v1/menus
+POST {{baseUrl}}/menus
 Content-Type: application/json
 
 {
