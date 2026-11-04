@@ -40,6 +40,7 @@ public class OrderService {
     }
 
     /** A12 이메일별 주문 목록 */
+    @Transactional(readOnly = true)
     public List<OrderResponse> findByEmail(String email) {
         return orderRepository.findByEmailOrderByIdDesc(email).stream()
                 .map(OrderResponse::from)
@@ -47,6 +48,7 @@ public class OrderService {
     }
 
     /** A13 주문 상세 */
+    @Transactional(readOnly = true)
     public OrderResponse findById(Long orderId) {
         return OrderResponse.from(getOrder(orderId));
     }
