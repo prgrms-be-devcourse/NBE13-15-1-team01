@@ -9,6 +9,7 @@ import com.kdt.cafesystem.menu.entity.Menu;
 import com.kdt.cafesystem.order.entity.Order;
 import com.kdt.cafesystem.order.entity.OrderItem;
 import com.kdt.cafesystem.order.repository.OrderRepository;
+import com.kdt.cafesystem.statistics.dto.CustomerStatisticsResponse;
 import com.kdt.cafesystem.statistics.dto.MenuStatisticsResponse;
 import com.kdt.cafesystem.statistics.dto.OrderStatisticsResponse;
 import java.time.LocalDate;
@@ -155,6 +156,72 @@ class StatisticsServiceTest {
         assertThat(statisticsService.getMenuStatistics(DATE)).isEmpty();
     }
 
+    @Test
+    @DisplayName("A24: 이메일별로 주문 수와 PLACED 주문의 수량·금액을 계산하고 이메일 오름차순으로 반환한다")
+    void customerStatistics() {
+        Order order101 = order(101L, "buyer@example.com", OrderItem.of(columbia, 2), OrderItem.of(brazil, 1)); // 17,000원
+        Order order102 = order(102L, "buyer@example.com", OrderItem.of(columbia, 1));                          //  5,000원
+        Order order103 = order(103L, "abc@example.com", OrderItem.of(brazil, 1));                              //  7,000원
+        givenOrdersReceivedOn(DATE, order101, order102, order103);
+
+        List<CustomerStatisticsResponse> result = statisticsService.getCustomerStatistics(DATE);
+
+        assertThat(result).containsExactly(
+                new CustomerStatisticsResponse(DATE, "abc@example.com", 1, 1, 0, 1, 7000),
+                new CustomerStatisticsResponse(DATE, "buyer@example.com", 2, 2, 0, 4, 22000));
+    }
+
+    @Test
+    @DisplayName("A24: 취소한 주문은 건수에만 포함하고 수량·금액에서는 뺀다 (명세서 예시: 주문 101 취소)")
+    void customerStatisticsWithCancelledOrder() {
+        Order order101 = order(101L, "buyer@example.com", OrderItem.of(columbia, 2), OrderItem.of(brazil, 1));
+        Order order102 = order(102L, "buyer@example.com", OrderItem.of(columbia, 1));
+        order101.cancel(LocalDateTime.of(2026, 11, 3, 13, 30));
+        givenOrdersReceivedOn(DATE, order101, order102);
+
+        List<CustomerStatisticsResponse> result = statisticsService.getCustomerStatistics(DATE);
+
+        assertThat(result).containsExactly(
+                new CustomerStatisticsResponse(DATE, "buyer@example.com", 2, 1, 1, 1, 5000));
+    }
+
+    @Test
+    @DisplayName("A24: 주문을 모두 취소한 고객도 목록에 포함하고 PLACED 주문 수·수량·금액은 0이다")
+    void customerWithOnlyCancelledOrders() {
+        Order cancelled = order(101L, "cancel@example.com", OrderItem.of(columbia, 2));
+        cancelled.cancel(LocalDateTime.of(2026, 11, 3, 13, 30));
+        Order placed = order(102L, "buyer@example.com", OrderItem.of(brazil, 1));
+        givenOrdersReceivedOn(DATE, cancelled, placed);
+
+        List<CustomerStatisticsResponse> result = statisticsService.getCustomerStatistics(DATE);
+
+        assertThat(result).containsExactly(
+                new CustomerStatisticsResponse(DATE, "buyer@example.com", 1, 1, 0, 1, 7000),
+                new CustomerStatisticsResponse(DATE, "cancel@example.com", 1, 0, 1, 0, 0));
+    }
+
+    @Test
+    @DisplayName("A24: 대소문자만 다른 이메일은 다른 고객이다")
+    void customerEmailIsCaseSensitive() {
+        givenOrdersReceivedOn(DATE,
+                order(101L, "buyer@example.com", OrderItem.of(columbia, 1)),
+                order(102L, "Buyer@example.com", OrderItem.of(columbia, 1)));
+
+        List<CustomerStatisticsResponse> result = statisticsService.getCustomerStatistics(DATE);
+
+        assertThat(result)
+                .extracting(CustomerStatisticsResponse::email)
+                .containsExactly("Buyer@example.com", "buyer@example.com");
+    }
+
+    @Test
+    @DisplayName("A24: 주문이 없는 날은 빈 목록을 반환한다")
+    void customerStatisticsEmpty() {
+        givenOrdersReceivedOn(DATE);
+
+        assertThat(statisticsService.getCustomerStatistics(DATE)).isEmpty();
+    }
+
     // ===== 테스트 데이터 만들기 =====
 
     private void givenOrdersReceivedOn(LocalDate date, Order... orders) {
@@ -171,6 +238,18 @@ class StatisticsServiceTest {
 
     private Order order(Long id, OrderItem... items) {
         Order order = Order.create("buyer@example.com", "서울시 실습로 10 101호", "01234", "",
+                LocalDateTime.of(2026, 11, 3, 13, 0), DATE);
+        for (OrderItem item : items) {
+            order.addItem(item);
+        }
+        ReflectionTestUtils.setField(order, "id", id);
+        return order;
+    }
+
+
+    // A24: 이메일을 지정해서 주문 만들기
+    private Order order(Long id, String email, OrderItem... items) {
+        Order order = Order.create(email, "서울시 실습로 10 101호", "01234", "",
                 LocalDateTime.of(2026, 11, 3, 13, 0), DATE);
         for (OrderItem item : items) {
             order.addItem(item);

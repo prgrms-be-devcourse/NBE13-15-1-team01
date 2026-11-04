@@ -23,7 +23,7 @@ public class DeliveryBatchController {
     @GetMapping
     public List<DeliveryBatchResponse> findBatches(
             @RequestParam
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @DateTimeFormat(pattern = "uuuu-MM-dd")
             @AllowedDate
             LocalDate shippingDate) {
         return deliveryBatchService.findBatches(shippingDate);
