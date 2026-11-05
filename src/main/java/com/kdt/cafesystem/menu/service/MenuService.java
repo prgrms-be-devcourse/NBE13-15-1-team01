@@ -5,11 +5,16 @@ import com.kdt.cafesystem.category.repository.CategoryRepo;
 import com.kdt.cafesystem.global.exception.BusinessException;
 import com.kdt.cafesystem.global.exception.ErrorCode;
 import com.kdt.cafesystem.menu.dto.MenuAvailabilityRequestDto;
+import com.kdt.cafesystem.menu.dto.MenuPageResponseDto;
 import com.kdt.cafesystem.menu.dto.MenuRequestDto;
 import com.kdt.cafesystem.menu.dto.MenuResponseDto;
 import com.kdt.cafesystem.menu.entity.Menu;
 import com.kdt.cafesystem.menu.repository.MenuRepo;
 import com.kdt.cafesystem.order.repository.OrderItemRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -131,6 +136,25 @@ public class MenuService {
         return toDtoList(
                 menuRepo.findByNameContainingOrderByIdAsc(trimmedKeyword)
         );
+    }
+
+    // 별도 메뉴 페이징 API
+    @Transactional(readOnly = true)
+    public MenuPageResponseDto list (Pageable pageable) {
+
+        if (pageable.getPageNumber()<0 || pageable.getPageSize()>50 || pageable.getPageSize()<1) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+        }
+
+        Pageable fixed = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by("id")
+        );
+        Page<Menu> found = menuRepo.findAll(fixed);
+        return new MenuPageResponseDto(
+                toDtoList(found.getContent()),
+                found.getNumber(), found.getSize(), found.getTotalElements(), found.getTotalPages());
     }
 
     // A21 판매 여부 변경: available만 바꿈
