@@ -36,7 +36,7 @@ Spring Boot 기반으로 카테고리·메뉴 관리, 주문·배송 묶음·통
 | --- | --- | --- |
 | DB 설계 및 ERD | 차호준, 김진형 | 차호준: category·menu 테이블 / 김진형: orders·order_item 테이블 |
 | 공통 예외 처리 | 차호준 | GlobalExceptionHandler, ErrorResponse, 커스텀 예외 클래스 |
-| CORS 및 웹 화면 연결 | 차호준, 이제섭 | WebConfig 설정 및 화면 연동 확인 |
+| CORS 및 웹 화면 연결 | 차호준, 이제섭 | CageCorsConfig 설정 및 화면 연동 확인 |
 | API 요청 테스트 | 전원 | 담당 API별 정상·오류 요청 작성 |
 | Controller 자동 테스트 | 전원 | 팀 전체 총 6개 테스트 작성 |
 
@@ -158,7 +158,7 @@ COLLATE utf8mb4_bin;
 | 파일 | 역할 |
 | --- | --- |
 | `schema.sql` | `category`, `menu`, `orders`, `order_item` 테이블 생성 |
-| `data.sql` | 초기 카테고리 2개 및 메뉴 4개 등록 |
+| `data.sql` | 초기 카테고리 1개 및 메뉴 4개 등록 |
 
 - 테이블 생성: `CREATE TABLE IF NOT EXISTS`
 - 초기 데이터 등록: `INSERT IGNORE`
@@ -166,15 +166,15 @@ COLLATE utf8mb4_bin;
 ### 4) 초기 데이터 확인
 
 ```sql
-SELECT * FROM category;
-SELECT * FROM menu;
+SELECT * FROM categories;
+SELECT * FROM menus;
 ```
 
 초기 데이터는 다음과 같이 등록됩니다.
 
-- 카테고리: 싱글오리진, 블렌드 (총 2개)
+- 카테고리: 싱글오리진·블렌드 (총 1개)
 - 메뉴: 총 4개
-- 초기 메뉴는 싱글오리진 카테고리에 등록됩니다.
+- 초기 메뉴는 싱글오리진·블렌드 카테고리에 등록됩니다.
 
 `spring.sql.init.mode: always` 설정으로 애플리케이션을 실행할 때마다 초기화 스크립트가 실행됩니다. `IF NOT EXISTS`와 `INSERT IGNORE`를 사용하므로 기존 테이블과 초기 데이터가 중복 생성되지 않습니다.
 
