@@ -1,14 +1,14 @@
 @baseUrl = http://127.0.0.1:8080/api/v1
 @categoryId = 1
 @menuId = 1
-@orderId = 1
+@menuId2 = 2
+@availabilityMenuId = 4
 @email = buyer@example.com
-@date = 2026-11-03
 @keyword = Brazil Serra Do Caparaó
 
 
 ### A01 카테고리 목록 → 200
-GET {{baseUrl}}categories
+GET {{baseUrl}}/categories
 Content-Type: application/json
 
 
@@ -17,7 +17,7 @@ GET {{baseUrl}}/categories/{{categoryId}}
 Content-Type: application/json
 
 
-### A03 카테고리 등록 → 201 + Location
+### A03 카테고리 등록 → 201
 POST {{baseUrl}}/categories
 Content-Type: application/json
 
@@ -25,19 +25,20 @@ Content-Type: application/json
   "name": "예시카테고리"
 }
 
+> {% client.global.set("newCategoryId", response.body.id); %}
+
 
 ### A04 카테고리 수정 → 200
-PUT {{baseUrl}}/categories/{{categoryId}}
+PUT {{baseUrl}}/categories/{{newCategoryId}}
 Content-Type: application/json
 
 {
-  "name": "싱글오리진수정"
+  "name": "수정_카테고리"
 }
 
 
 ### A05 카테고리 삭제 → 204, 빈 본문
-DELETE {{baseUrl}}/categories/2
-Content-Type: application/json
+DELETE {{baseUrl}}/categories/{{newCategoryId}}
 
 
 ### A06 전체 메뉴 목록 ->200
@@ -46,28 +47,36 @@ Content-Type: application/json
 
 
 ### A07 메뉴 상세 -> 200
-GET {{baseUrl}}/menus/2
+GET {{baseUrl}}/menus/{{menuId}}
 
-
-### A08 메뉴 등록 -> 201
+### A08 메뉴 등록 → 201
 POST {{baseUrl}}/menus
 Content-Type: application/json
 
 {
-  "categoryId": 1,
+  "categoryId": {{categoryId}},
   "name": "Americano",
   "price": 5000,
   "description": "테스트용입니다."
 }
 
+> {% client.global.set("newMenuId", response.body.id); %}
 
-### A09 메뉴 일반 수정 -> 200
-PUT {{baseUrl}}/menus/{{menuId}}
+
+### A09 메뉴 일반 수정 → 200
+PUT {{baseUrl}}/menus/{{newMenuId}}
 Content-Type: application/json
 
+{
+  "categoryId": {{categoryId}},
+  "name": "Americano수정",
+  "price": 5500,
+  "description": "수정한 설명입니다."
+}
 
-### A10 메뉴 삭제 -> 204
-DELETE {{baseUrl}}/menus/{{menuId}}
+
+### A10 메뉴 삭제 → 204
+DELETE {{baseUrl}}/menus/{{newMenuId}}
 
 
 ### A11 주문 접수 (정상) → 201
@@ -75,17 +84,16 @@ POST {{baseUrl}}/orders
 Content-Type: application/json
 
 {
-  "email": "buyer@example.com",
+  "email": "{{email}}",
   "address": "서울시 강남구 테헤란로 1",
   "postcode": "06234",
-  "memo": "문 앞에 놓아주세요",
   "items": [
     {
-      "menuId": 1,
+      "menuId": {{menuId}},
       "quantity": 2
     },
     {
-      "menuId": 2,
+      "menuId": {{menuId2}},
       "quantity": 1
     }
   ]
@@ -93,11 +101,13 @@ Content-Type: application/json
 
 > {%
     client.global.set("orderId", response.body.id);
+    client.global.set("shippingDate", response.body.shippingDate);
+    client.global.set("orderDate", response.body.createdAt.substring(0, 10));
 %}
 
 
 ### A12 이메일별 주문 목록 → 200
-GET {{baseUrl}}/orders?email=buyer@example.com
+GET {{baseUrl}}/orders?email={{email}}
 
 
 ### A13 주문 상세 → 200
@@ -105,7 +115,7 @@ GET {{baseUrl}}/orders/{{orderId}}
 
 
 ### A14 배송 묶음 (정상) → 200
-GET {{baseUrl}}/delivery-batches?shippingDate=2026-11-03
+GET {{baseUrl}}/delivery-batches?shippingDate={{shippingDate}}
 
 
 ### A15 카테고리별 메뉴 → 200
@@ -117,11 +127,11 @@ POST {{baseUrl}}/orders/{{orderId}}/cancel
 
 
 ### A17 접수일별 주문 통계 (정상) → 200
-GET {{baseUrl}}/statistics/orders?date=2026-11-03
+GET {{baseUrl}}/statistics/orders?date={{orderDate}}
 
 
 ### A18 접수일별 메뉴 통계 (정상) → 200
-GET {{baseUrl}}/statistics/menus?date=2026-11-03
+GET {{baseUrl}}/statistics/menus?date={{orderDate}}
 
 
 ### A19 판매 중 메뉴 -> 200
@@ -129,11 +139,11 @@ GET {{baseUrl}}/menus/available
 
 
 ### A20 메뉴명 검색 -> 200
-GET {{baseUrl}}/menus/search?keyword=={{keyword}}
+GET {{baseUrl}}/menus/search?keyword={{keyword}}
 
 
 ### A21 판매 여부 변경 -> 200
-PUT {{baseUrl}}/menus/{{menuId}}/availability
+PUT {{baseUrl}}/menus/{{availabilityMenuId}}/availability
 Content-Type: application/json
 
 {
@@ -154,7 +164,7 @@ POST {{baseUrl}}/orders/{{orderId}}/reorder
 
 
 ### A24 접수일별 고객 통계 (정상) → 200
-GET {{baseUrl}}/statistics/customers?date=2026-11-03
+GET {{baseUrl}}/statistics/customers?date={{orderDate}}
 
 //입력 오류 2개(400) / 대상 없음 1개(404) / 업무 조건 위반 3개(409)
 
@@ -164,7 +174,7 @@ POST {{baseUrl}}/menus
 Content-Type: application/json
 
 {
-  "categoryId": 1,
+  "categoryId": {{categoryId}},
   "name": "Latte",
   "price": 99999999,
   "description": "테스트입니다."
@@ -188,8 +198,8 @@ Content-Type: application/json
 }
 
 ### A05 오류: 메뉴가 들어있는 카테고리 삭제 → 409 CATEGORY_IN_USE
-DELETE {{baseUrl}}/categories/1
+DELETE {{baseUrl}}/categories/{{categoryId}}
 
 ### A10오류: 주문에 사용된 메뉴 삭제 → 409 MENU_IN_USE
-DELETE {{baseUrl}}/menus/1
+DELETE {{baseUrl}}/menus/{{menuId}}
 
