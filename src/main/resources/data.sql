@@ -10,6 +10,14 @@ WHERE NOT EXISTS (
     WHERE name = '싱글오리진'
 );
 
+INSERT INTO categories (name)
+SELECT '블렌드'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM categories
+    WHERE name = '블렌드'
+);
+
 -- 2. 메뉴 초기 데이터 등록
 INSERT INTO menus (category_id, name, price, description, available)
 SELECT

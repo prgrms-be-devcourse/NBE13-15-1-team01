@@ -36,7 +36,7 @@ Spring Boot 기반으로 카테고리·메뉴 관리, 주문·배송 묶음·통
 | --- | --- | --- |
 | DB 설계 및 ERD | 차호준, 김진형 | 차호준: category·menu 테이블 / 김진형: orders·order_item 테이블 |
 | 공통 예외 처리 | 차호준 | GlobalExceptionHandler, ErrorResponse, 커스텀 예외 클래스 |
-| CORS 및 웹 화면 연결 | 차호준, 이제섭 | WebConfig 설정 및 화면 연동 확인 |
+| CORS 및 웹 화면 연결 | 차호준, 이제섭 | CafeCorsConfig 설정 및 화면 연동 확인 |
 | API 요청 테스트 | 전원 | 담당 API별 정상·오류 요청 작성 |
 | Controller 자동 테스트 | 전원 | 팀 전체 총 6개 테스트 작성 |
 
@@ -166,8 +166,8 @@ COLLATE utf8mb4_bin;
 ### 4) 초기 데이터 확인
 
 ```sql
-SELECT * FROM category;
-SELECT * FROM menu;
+SELECT * FROM categories;
+SELECT * FROM menus;
 ```
 
 초기 데이터는 다음과 같이 등록됩니다.
