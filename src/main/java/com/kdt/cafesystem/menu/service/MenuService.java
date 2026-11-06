@@ -29,10 +29,13 @@ public class MenuService {
     private final MenuRepo menuRepo;
     private final CategoryRepo categoryRepo;
     private final OrderItemRepository orderItemRepository;
-    public MenuService(MenuRepo menuRepo, CategoryRepo categoryRepo, OrderItemRepository orderItemRepository) {
+    private final AvailableMenuCache availableMenuCache;
+    public MenuService(MenuRepo menuRepo, CategoryRepo categoryRepo, OrderItemRepository orderItemRepository,
+                       AvailableMenuCache availableMenuCache) {
         this.menuRepo = menuRepo;
         this.categoryRepo = categoryRepo;
         this.orderItemRepository = orderItemRepository;
+        this.availableMenuCache = availableMenuCache;
     }
 
     // A06
@@ -71,7 +74,9 @@ public class MenuService {
         }
 
         Menu menu = new Menu(req.name().trim(), req.price(), req.description(), foundCategory.get());
-        return toDto(menuRepo.save(menu));
+        MenuResponseDto saved = toDto(menuRepo.save(menu));
+        availableMenuCache.evict();
+        return saved;
     }
 
     // A09
@@ -92,6 +97,7 @@ public class MenuService {
         menu.setName(req.name().trim());
         menu.setPrice(req.price());
         menu.setDescription(req.description());
+        availableMenuCache.evict();
         return toDto(menu);
     }
 
@@ -108,12 +114,19 @@ public class MenuService {
         }
 
         menuRepo.delete(foundMenu.get());
+        availableMenuCache.evict();
     }
 
-    // A19 판매 중 메뉴
+    // A19 판매 중 메뉴: Redis 캐시가 있으면 DB를 조회하지 않음
     @Transactional(readOnly = true)
     public List<MenuResponseDto> findAvailable() {
-        return toDtoList(menuRepo.findByAvailableTrueOrderByIdAsc());
+        Optional<List<MenuResponseDto>> cached = availableMenuCache.get();
+        if (cached.isPresent()) {
+            return cached.get();
+        }
+        List<MenuResponseDto> menus = toDtoList(menuRepo.findByAvailableTrueOrderByIdAsc());
+        availableMenuCache.put(menus);
+        return menus;
     }
 
     // A20 메뉴명 검색: 결과가 없으면 []
@@ -165,6 +178,7 @@ public class MenuService {
         }
         Menu menu = foundMenu.get();
         menu.setAvailable(req.available());
+        availableMenuCache.evict();
         return toDto(menu);
     }
 

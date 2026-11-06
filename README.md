@@ -77,6 +77,7 @@ Spring Boot 기반으로 카테고리·메뉴 관리, 주문·배송 묶음·통
 | Gradle | 9.8.2 |
 | MySQL | 8.4.11 |
 | IDE | IntelliJ IDEA Ultimate |
+| Redis | 7.4 (선택 심화: 메뉴 조회 캐시) |
 
 ### DB 설정 및 환경변수
 
@@ -366,7 +367,7 @@ git tag v1.0.0
 | --- | --- | --- | --- |
 | 업무 규칙 자동 테스트 | ⬜ 미구현 | `src/test/.../OrderServiceTest` | `./gradlew test --tests "*OrderServiceTest*"` |
 | 실제 DB 저장·롤백 테스트 | ⬜ 미구현 | `src/test/.../OrderRollbackTest` | H2 프로파일로 테스트 실행 |
-| Redis 메뉴 조회 캐시 (A06/A19 중 택1) | ⬜ 미구현 | `MenuCacheConfig` | TTL 설정 및 `redis-cli TTL menus:all` 확인 |
+| Redis 메뉴 조회 캐시 (A19 판매 중 메뉴) | ✅ 완료 | `menu/service/AvailableMenuCache`, `MenuService.findAvailable` | `./gradlew test --tests "*AvailableMenuCacheTest"` / `redis-cli TTL cafe:menus:available` |
 | 메뉴 페이징 | ⬜ 미구현 | `MenuController.page` | `.http` 파일의 페이징 요청 |
 | RestClient 외부 조회 | ⬜ 미구현 | `ReferenceController` | `./gradlew test --tests "*Reference*"` |
 
@@ -374,5 +375,44 @@ git tag v1.0.0
 
 - 메뉴 페이징: `GET /api/v1/menus/page`
 - 외부 게시글 조회: `GET /api/v1/reference/posts/{postId}`
+
+
+### Redis 메뉴 조회 캐시 (A19)
+
+| 항목 | 내용 |
+| --- | --- |
+| 대상 API | A19 `GET /api/v1/menus/available` |
+| 키 | `cafe:menus:available` |
+| 값 | A19 응답과 같은 JSON 배열 (String) |
+| TTL | **60초** |
+| 캐시 삭제 | A08 등록, A09 수정, A10 삭제, A21 판매 여부 변경이 성공(commit)한 뒤 |
+| Redis 장애 시 | 캐시 없이 DB에서 조회 (A19는 정상 응답) |
+| 접속 환경변수 | `REDIS_HOST` (기본 `localhost`), `REDIS_PORT` (기본 `6379`) |
+
+**Redis 실행**
+
+`kdt-redis` 컨테이너가 이미 있으면 그것을 켜고, 없으면 새로 만듭니다.
+
+```bash
+docker start kdt-redis 2>/dev/null || docker run -d --name kdt-redis -p 127.0.0.1:6379:6379 redis:7.4
+```
+
+기존 `kdt-redis`가 6379가 아닌 다른 포트에 연결되어 있다면 `REDIS_PORT` 환경변수로 그 포트를 지정합니다.
+
+**자동 테스트** (실제 Redis + H2, Redis가 꺼져 있으면 건너뜀)
+
+```bash
+./gradlew test --tests "*AvailableMenuCacheTest"
+```
+
+**수동 확인** (`requests/redis-menu-cache.http`를 위에서부터 실행)
+
+```bash
+docker exec kdt-redis redis-cli GET cafe:menus:available
+docker exec kdt-redis redis-cli TTL cafe:menus:available
+```
+
+- 캐시가 유효한 동안 다시 조회하면 실행 SQL 로그(`org.hibernate.SQL`)에 `menus` select가 찍히지 않습니다.
+- 메뉴 변경 직후 `EXISTS cafe:menus:available`이 `0`이고, 다음 조회에 변경 결과가 반영됩니다.
 
 구현한 항목은 구현 여부를 변경하고 실제 코드 위치와 검증 결과를 함께 기록합니다.
