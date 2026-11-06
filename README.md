@@ -93,7 +93,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     defer-datasource-initialization: true
 
   sql:
@@ -136,7 +136,7 @@ DB 비밀번호 등 민감한 정보는 Git 저장소에 포함하지 않습니�
 
 ## 4. 새 DB 준비 및 초기 데이터 등록
 
-애플리케이션 실행 시 `schema.sql`과 `data.sql`이 자동 실행됩니다.
+애플리케이션 실행 시 테이블은 Hibernate(`ddl-auto: update`)가 자동으로 생성하고, 초기 데이터는 `data.sql`로 등록됩니다.
 
 ### 1) 데이터베이스 생성
 
@@ -156,13 +156,13 @@ COLLATE utf8mb4_bin;
 
 백엔드를 실행하면 다음 순서로 초기화가 진행됩니다.
 
-| 파일 | 역할 |
+| 파일·설정 | 역할 |
 | --- | --- |
-| `schema.sql` | `category`, `menu`, `orders`, `order_item` 테이블 생성 |
+| `ddl-auto: update` (Hibernate) | `categories`, `menus`, `orders`, `order_items` 테이블 생성 |
 | `data.sql` | 초기 카테고리 2개 및 메뉴 4개 등록 |
 
-- 테이블 생성: `CREATE TABLE IF NOT EXISTS`
-- 초기 데이터 등록: `INSERT IGNORE`
+- 테이블 생성: 엔티티 기준으로 없는 테이블만 생성 (이미 있는 테이블과 데이터는 유지)
+- 초기 데이터 등록: `INSERT ... WHERE NOT EXISTS` (이미 있는 이름은 건너뜀)
 
 ### 4) 초기 데이터 확인
 
@@ -177,7 +177,7 @@ SELECT * FROM menus;
 - 메뉴: 총 4개
 - 초기 메뉴는 싱글오리진 카테고리에 등록됩니다.
 
-`spring.sql.init.mode: always` 설정으로 애플리케이션을 실행할 때마다 초기화 스크립트가 실행됩니다. `IF NOT EXISTS`와 `INSERT IGNORE`를 사용하므로 기존 테이블과 초기 데이터가 중복 생성되지 않습니다.
+`spring.sql.init.mode: always` 설정으로 애플리케이션을 실행할 때마다 `data.sql`이 실행됩니다. `ddl-auto: update`는 없는 테이블만 만들고 `data.sql`은 이미 있는 데이터를 건너뛰므로, 기존 테이블과 초기 데이터가 중복 생성되지 않습니다.
 
 데이터베이스를 완전히 초기화하려면 다음 명령을 실행한 후 1번부터 다시 진행합니다.
 
@@ -234,8 +234,11 @@ http://127.0.0.1:8080
 프로젝트 루트에서 다음 명령어를 실행합니다.
 
 ```bash
-./gradlew test
+DB_PASSWORD=실제_DB_비밀번호 ./gradlew test
 ```
+
+- `CafeSystemApplicationTests`는 실제 MySQL에 접속해 애플리케이션 시작을 확인하므로 `DB_PASSWORD`가 필요합니다. IntelliJ에서 테스트를 실행할 때도 실행 구성에 같은 환경변수를 등록합니다.
+- Redis 캐시 테스트(`AvailableMenuCacheTest`)는 Redis(`localhost:6379`)가 켜져 있을 때만 실행되고, 꺼져 있으면 실패 대신 건너뜁니다.
 
 테스트 결과 리포트:
 
@@ -251,10 +254,10 @@ build/reports/tests/test/index.html
 | --- | --- | --- | --- |
 | 정상 1 | `CategoryControllerTest.list_returns200` | A01의 200 응답 및 id·name 필드 확인 | 팀원1 |
 | 정상 2 | `MenuControllerTest.delete_returns204` | A10의 204 응답 및 빈 본문 확인 | 팀원4 |
-| 입력 오류 1 | `OrderControllerTest.create_invalidPostcode_returns400` | 잘못된 우편번호 입력 시 400 및 VALIDATION_ERROR 확인 | 팀원2 |
-| 입력 오류 2 | `MenuControllerTest.availability_null_returns400` | available 값이 유효하지 않을 때 400 및 VALIDATION_ERROR 확인 | 팀원5 |
-| 대상 없음 | `OrderControllerTest.get_notFound_returns404` | 존재하지 않는 주문 조회 시 404 및 ORDER_NOT_FOUND 확인 | 팀원2 |
-| 업무 위반 | `OrderControllerTest.cancel_afterDeadline_returns409` | 취소 마감 이후 요청 시 409 및 ORDER_NOT_CANCELLABLE 확인 | 팀원3 |
+| 입력 오류 1 | `OrderControllerTest.createOrder_invalidPostcode` | A11 우편번호가 5자리 미만이면 400, VALIDATION_ERROR, fieldErrors.postcode 확인 | 팀원2 |
+| 입력 오류 2 | `MenuControllerTest.changeAvailability_null_returns400` | A21 available이 없으면 400, VALIDATION_ERROR, fieldErrors.available 확인 | 팀원5 |
+| 대상 없음 | `MenuControllerTest.find_notFound_returns404` | A07 없는 메뉴 조회 시 404, MENU_NOT_FOUND, message, 빈 fieldErrors 확인 | 팀원2 |
+| 업무 위반 | `MenuControllerTest.delete_inUse_returns409` | A10 주문에 쓰인 메뉴 삭제 시 409, MENU_IN_USE, message, 빈 fieldErrors 확인 | 팀원3 |
 
 ### API 요청 테스트
 
@@ -266,9 +269,10 @@ build/reports/tests/test/index.html
 @baseUrl = http://127.0.0.1:8080/api/v1
 @categoryId = 1
 @menuId = 1
-@orderId = 1
+@menuId2 = 2
+@availabilityMenuId = 4
 @email = buyer@example.com
-@date = 2026-11-03
+@keyword = Brazil Serra Do Caparaó
 ```
 
 **테스트 구성**
@@ -278,17 +282,19 @@ build/reports/tests/test/index.html
 
 | 상태 코드 | 테스트 내용 |
 | --- | --- |
-| 400 × 2 | A11 잘못된 이메일 형식 / A08 가격 범위 초과 |
+| 400 × 2 | A08 가격 범위 초과 / A14 범위 밖 배송일 (2000-01-01~2099-12-31 밖) |
 | 404 × 1 | A07 존재하지 않는 menuId 조회 |
-| 409 × 3 | A03 카테고리명 중복 / A11 판매 중지 메뉴 포함 / A11 배송지 불일치 |
+| 409 × 3 | A03 카테고리명 중복 / A05 메뉴가 들어 있는 카테고리 삭제 / A10 주문에 사용된 메뉴 삭제 |
 
 **실행 방법**
 
 1. 초기 데이터가 등록된 상태에서 백엔드를 실행합니다.
-2. `requests/api-check.http` 파일을 위에서 아래 순서로 실행합니다.
-3. A03(카테고리 등록), A08(메뉴 등록), A11(주문 접수)의 응답에서 생성된 ID를 확인합니다.
-4. 확인한 ID를 각각 `@categoryId`, `@menuId`, `@orderId`에 직접 입력합니다.
-5. 이후 요청을 실행하고 응답 상태 코드와 결과를 확인합니다.
+2. `requests/api-check.http` 파일을 위에서 아래 순서로 한 번에 실행합니다. (IntelliJ: Run All Requests in File)
+3. A03·A08에서 만든 카테고리·메뉴의 ID와 A11 주문의 ID·배송일·접수일은 응답에서 자동으로 저장되어 이후 요청에 사용됩니다. 직접 입력할 필요가 없습니다.
+4. 각 요청의 응답 상태 코드와 결과를 확인합니다.
+
+- 초기 데이터의 ID가 다른 DB에서 실행할 때는 파일 상단의 `@categoryId`, `@menuId`, `@menuId2`, `@availabilityMenuId`만 실제 ID로 바꿉니다.
+- A03·A08에서 만든 카테고리·메뉴는 A05·A10에서 삭제하므로 여러 번 실행해도 됩니다.
 
 각 요청에는 준비 데이터, 기대 상태 코드, 비교할 응답 값을 주석으로 작성합니다.
 
@@ -303,19 +309,19 @@ build/reports/tests/test/index.html
 
 **테스트 코드**
 
-`OrderServiceTest`에서 `Clock.fixed()`를 사용해 시각을 고정합니다.
+`OrderServiceTimeTest`와 `ShippingPolicyTest`에서 `Clock.fixed()`를 사용해 서울 시각을 고정합니다. DB 없이 실행됩니다.
 
-| 고정 시각 | 확인 내용 |
-| --- | --- |
-| 2026-11-03 13:59:59 | 접수 시 배송일이 2026-11-03인지 확인 |
-| 2026-11-03 14:00:00 | 접수 시 배송일이 2026-11-04인지 확인 |
-| 2026-11-03 13:59:59 | 배송일이 2026-11-03인 주문 취소 가능 여부 확인 |
-| 2026-11-03 14:00:00 | 동일 주문 취소 시 409 ORDER_NOT_CANCELLABLE 반환 여부 확인 |
+| 테스트 | 고정 시각 | 확인 내용 |
+| --- | --- | --- |
+| `OrderServiceTimeTest` | 2026-11-05 13:59:59.700 | 접수 시각을 초 단위로 절사(`2026-11-05T13:59:59+09:00`)하고 배송일이 2026-11-05인지 확인 |
+| `OrderServiceTimeTest` | 2026-11-05 14:00:00 | 접수 시 배송일이 2026-11-06인지 확인 |
+| `ShippingPolicyTest` | 2026-11-05 13:59:59 / 14:00:00 | 접수 시 배송일이 각각 당일(11-05) / 다음 날(11-06)인지 확인 |
+| `ShippingPolicyTest` | 2026-11-05 13:59:59 / 14:00:00 | 배송일이 2026-11-05인 주문이 각각 취소 가능 / 취소 불가인지 확인 (취소 불가이면 주문 취소 API는 409 ORDER_NOT_CANCELLABLE) |
 
 **테스트 실행**
 
 ```bash
-./gradlew test --tests "*OrderServiceTest*"
+./gradlew test --tests "*OrderServiceTimeTest" --tests "*ShippingPolicyTest"
 ```
 
 ---
@@ -368,7 +374,7 @@ git tag v1.0.0
 | 업무 규칙 자동 테스트 | ⬜ 미구현 | `src/test/.../OrderServiceTest` | `./gradlew test --tests "*OrderServiceTest*"` |
 | 실제 DB 저장·롤백 테스트 | ⬜ 미구현 | `src/test/.../OrderRollbackTest` | H2 프로파일로 테스트 실행 |
 | Redis 메뉴 조회 캐시 (A19 판매 중 메뉴) | ✅ 완료 | `menu/service/AvailableMenuCache`, `MenuService.findAvailable` | `./gradlew test --tests "*AvailableMenuCacheTest"` / `redis-cli TTL cafe:menus:available` |
-| 메뉴 페이징 | ⬜ 미구현 | `MenuController.page` | `.http` 파일의 페이징 요청 |
+| 메뉴 페이징 | ✅ 완료 | `MenuController.page` | `.http` 파일의 페이징 요청 |
 | RestClient 외부 조회 | ⬜ 미구현 | `ReferenceController` | `./gradlew test --tests "*Reference*"` |
 
 **선택 심화 구현 API 예시**
