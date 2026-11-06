@@ -1,15 +1,15 @@
-### 실행 순서: 위에서 아래로. 각 요청 뒤에 Run 창의 SQL 로그를 통해 확인
-### 카테고리아이디가 존재하는 아이디인지 확인
+# 위에서 아래로. 각 요청 뒤에 run 창의 sql 로그를 통해 확인
+# 카테고리아이디가 존재하는 아이디인지 확인
 @baseUrl = http://127.0.0.1:8080/api/v1
-@categoryId = 3
+@categoryId = 1
 
-### 1. A19 첫 조회 → DB 조회(SQL 로그에 select), Redis에 저장
+### 1. 판매 중 메뉴 첫 조회 → DB 조회(SQL 로그에 select), Redis에 저장
 GET {{baseUrl}}/menus/available
 
-### 2. A19 다시 조회 (60초 안에) → SQL 로그에 select 없음
+### 2. 캐시가 유효한 동안(60초 안에) 같은 목록 다시 조회 → DB 재조회 없음(SQL 로그에 select 없음)
 GET {{baseUrl}}/menus/available
 
-### 3. A08 등록 → 캐시 삭제
+### 3. 메뉴 등록 → 캐시 삭제
 POST {{baseUrl}}/menus
 Content-Type: application/json
 
@@ -17,38 +17,38 @@ Content-Type: application/json
 
 > {% client.global.set("cacheMenuId", response.body.id); %}
 
-### 4. A19 → 새 메뉴 보임 (select 다시 1번)
+### 4. 메뉴 등록 후 첫 조회 → 새 메뉴 반영 (select 다시 1번)
 GET {{baseUrl}}/menus/available
 
-### 5. A09 이름·가격 수정 → 캐시 삭제
+### 5. 메뉴 이름/가격 수정 → 캐시 삭제
 PUT {{baseUrl}}/menus/{{cacheMenuId}}
 Content-Type: application/json
 
 { "categoryId": {{categoryId}}, "name": "캐시 테스트 원두2", "price": 2000, "description": "" }
 
-### 6. A19 → 바뀐 이름·가격
+### 6. 이름/가격 수정 후 첫 조회 → 바뀐 이름·가격 반영
 GET {{baseUrl}}/menus/available
 
-### 7. A21 판매 중지 → 캐시 삭제
+### 7. 판매 중지 → 캐시 삭제
 PUT {{baseUrl}}/menus/{{cacheMenuId}}/availability
 Content-Type: application/json
 
 { "available": false }
 
-### 8. A19 → 목록에서 빠짐
+### 8. 판매 중지 후 첫 조회 → 목록에서 빠짐
 GET {{baseUrl}}/menus/available
 
-### 9. A21 판매 재개
+### 9. 판매 재개 → 캐시 삭제
 PUT {{baseUrl}}/menus/{{cacheMenuId}}/availability
 Content-Type: application/json
 
 { "available": true }
 
-### 10. A19 → 다시 보임
+### 10. 판매 재개 후 첫 조회 → 목록에 다시 보임
 GET {{baseUrl}}/menus/available
 
-### 11. A10 삭제 (주문 이력 없음) → 204, 캐시 삭제
+### 11. 주문 이력 없는 메뉴 삭제 → 204, 캐시 삭제
 DELETE {{baseUrl}}/menus/{{cacheMenuId}}
 
-### 12. A19 → 목록에서 빠짐 (처음 상태로 돌아옴)
+### 12. 메뉴 삭제 후 첫 조회 → 목록에서 빠짐 (처음 상태로 돌아옴)
 GET {{baseUrl}}/menus/available
