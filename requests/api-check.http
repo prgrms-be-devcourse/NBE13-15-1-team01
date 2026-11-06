@@ -1,0 +1,205 @@
+@baseUrl = http://127.0.0.1:8080/api/v1
+@categoryId = 1
+@menuId = 1
+@menuId2 = 2
+@availabilityMenuId = 4
+@email = buyer@example.com
+@keyword = Brazil Serra Do Caparaó
+
+
+### A01 카테고리 목록 → 200
+GET {{baseUrl}}/categories
+Content-Type: application/json
+
+
+### A02 카테고리 상세 → 200
+GET {{baseUrl}}/categories/{{categoryId}}
+Content-Type: application/json
+
+
+### A03 카테고리 등록 → 201
+POST {{baseUrl}}/categories
+Content-Type: application/json
+
+{
+  "name": "예시카테고리"
+}
+
+> {% client.global.set("newCategoryId", response.body.id); %}
+
+
+### A04 카테고리 수정 → 200
+PUT {{baseUrl}}/categories/{{newCategoryId}}
+Content-Type: application/json
+
+{
+  "name": "수정_카테고리"
+}
+
+
+### A05 카테고리 삭제 → 204, 빈 본문
+DELETE {{baseUrl}}/categories/{{newCategoryId}}
+
+
+### A06 전체 메뉴 목록 ->200
+GET {{baseUrl}}/menus
+Content-Type: application/json
+
+
+### A07 메뉴 상세 -> 200
+GET {{baseUrl}}/menus/{{menuId}}
+
+### A08 메뉴 등록 → 201
+POST {{baseUrl}}/menus
+Content-Type: application/json
+
+{
+  "categoryId": {{categoryId}},
+  "name": "Americano",
+  "price": 5000,
+  "description": "테스트용입니다."
+}
+
+> {% client.global.set("newMenuId", response.body.id); %}
+
+
+### A09 메뉴 일반 수정 → 200
+PUT {{baseUrl}}/menus/{{newMenuId}}
+Content-Type: application/json
+
+{
+  "categoryId": {{categoryId}},
+  "name": "Americano수정",
+  "price": 5500,
+  "description": "수정한 설명입니다."
+}
+
+
+### A10 메뉴 삭제 → 204
+DELETE {{baseUrl}}/menus/{{newMenuId}}
+
+
+### A11 주문 접수 (정상) → 201
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "address": "서울시 강남구 테헤란로 1",
+  "postcode": "06234",
+  "items": [
+    {
+      "menuId": {{menuId}},
+      "quantity": 2
+    },
+    {
+      "menuId": {{menuId2}},
+      "quantity": 1
+    }
+  ]
+}
+
+> {%
+    client.global.set("orderId", response.body.id);
+    client.global.set("shippingDate", response.body.shippingDate);
+    client.global.set("orderDate", response.body.createdAt.substring(0, 10));
+%}
+
+
+### A12 이메일별 주문 목록 → 200
+GET {{baseUrl}}/orders?email={{email}}
+
+
+### A13 주문 상세 → 200
+GET {{baseUrl}}/orders/{{orderId}}
+
+
+### A14 배송 묶음 (정상) → 200
+GET {{baseUrl}}/delivery-batches?shippingDate={{shippingDate}}
+
+
+### A15 카테고리별 메뉴 → 200
+GET {{baseUrl}}/categories/{{categoryId}}/menus
+
+
+### A16 주문 취소 → 200 (배송일 14:00 이후면 409 ORDER_NOT_CANCELLABLE)
+POST {{baseUrl}}/orders/{{orderId}}/cancel
+
+
+### A17 접수일별 주문 통계 (정상) → 200
+GET {{baseUrl}}/statistics/orders?date={{orderDate}}
+
+
+### A18 접수일별 메뉴 통계 (정상) → 200
+GET {{baseUrl}}/statistics/menus?date={{orderDate}}
+
+
+### A19 판매 중 메뉴 -> 200
+GET {{baseUrl}}/menus/available
+
+
+### A20 메뉴명 검색 -> 200
+GET {{baseUrl}}/menus/search?keyword={{keyword}}
+
+
+### A21 판매 여부 변경 -> 200
+PUT {{baseUrl}}/menus/{{availabilityMenuId}}/availability
+Content-Type: application/json
+
+{
+  "available": false
+}
+
+### A22 주문 메모 수정 → 200
+PUT {{baseUrl}}/orders/{{orderId}}/memo
+Content-Type: application/json
+
+{
+  "memo": "경비실에 맡겨주세요"
+}
+
+
+### A23 재주문 → 201 (현재 메뉴 가격으로 새 주문)
+POST {{baseUrl}}/orders/{{orderId}}/reorder
+
+
+### A24 접수일별 고객 통계 (정상) → 200
+GET {{baseUrl}}/statistics/customers?date={{orderDate}}
+
+//입력 오류 2개(400) / 대상 없음 1개(404) / 업무 조건 위반 3개(409)
+
+//(400)Error
+### A08 오류: 가격 범위 초과 → 400 VALIDATION_ERROR
+POST {{baseUrl}}/menus
+Content-Type: application/json
+
+{
+  "categoryId": {{categoryId}},
+  "name": "Latte",
+  "price": 99999999,
+  "description": "테스트입니다."
+}
+
+### A14 오류: 범위 밖 날짜 → 400 VALIDATION_ERROR, fieldErrors.shippingDate
+GET {{baseUrl}}/delivery-batches?shippingDate=1999-12-31
+
+//(404)Error
+### A07 오류: 존재하지 않는 menuId 존재 -> 404 MENU_NOT_FOUND
+GET {{baseUrl}}/menus/99999
+
+
+//(409)Error
+### A03 오류: 카테고리명 중복 → 409 CATEGORY_NAME_DUPLICATED
+POST {{baseUrl}}/categories
+Content-Type: application/json
+
+{
+  "name": "싱글오리진"
+}
+
+### A05 오류: 메뉴가 들어있는 카테고리 삭제 → 409 CATEGORY_IN_USE
+DELETE {{baseUrl}}/categories/{{categoryId}}
+
+### A10오류: 주문에 사용된 메뉴 삭제 → 409 MENU_IN_USE
+DELETE {{baseUrl}}/menus/{{menuId}}
+

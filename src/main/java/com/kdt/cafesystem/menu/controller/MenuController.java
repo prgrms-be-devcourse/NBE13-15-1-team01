@@ -1,10 +1,12 @@
 package com.kdt.cafesystem.menu.controller;
 
 import com.kdt.cafesystem.menu.dto.MenuAvailabilityRequestDto;
+import com.kdt.cafesystem.menu.dto.MenuPageResponseDto;
 import com.kdt.cafesystem.menu.dto.MenuRequestDto;
 import com.kdt.cafesystem.menu.dto.MenuResponseDto;
 import com.kdt.cafesystem.menu.service.MenuService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,6 +35,11 @@ public class MenuController {
         return menuService.find(menuId);
     }
 
+    // 심화 별도 메뉴 페이징 API
+    @GetMapping("/page")
+    public MenuPageResponseDto findPage(Pageable pageable) {
+        return menuService.list(pageable);
+    }
 
     //A08 메뉴 등록 -> 201
     @PostMapping
@@ -75,4 +82,5 @@ public class MenuController {
             @Valid @RequestBody MenuAvailabilityRequestDto requestDto) {
         return ResponseEntity.ok(menuService.changeAvailability(menuId, requestDto));
     }
+
 }
