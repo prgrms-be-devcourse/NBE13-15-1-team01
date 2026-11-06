@@ -405,7 +405,7 @@ docker start kdt-redis 2>/dev/null || docker run -d --name kdt-redis -p 127.0.0.
 ./gradlew test --tests "*AvailableMenuCacheTest"
 ```
 
-**수동 확인** (`requests/menu-cache.http`를 위에서부터 실행)
+**수동 확인** (`requests/redis-menu-cache.http`를 위에서부터 실행)
 
 ```bash
 docker exec kdt-redis redis-cli GET cafe:menus:available
