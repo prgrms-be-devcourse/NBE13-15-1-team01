@@ -7,5 +7,6 @@ public record MenuPageResponseDto(
         int number,
         int size,
         long totalElements,
-        int totalPages) {
+        int totalPages
+) {
 }

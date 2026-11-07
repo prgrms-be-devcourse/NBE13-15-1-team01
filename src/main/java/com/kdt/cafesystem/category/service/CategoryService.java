@@ -7,77 +7,58 @@ import com.kdt.cafesystem.category.repository.CategoryRepo;
 import com.kdt.cafesystem.global.exception.BusinessException;
 import com.kdt.cafesystem.global.exception.ErrorCode;
 import com.kdt.cafesystem.menu.repository.MenuRepo;
+import java.util.List;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
 @Service
+@RequiredArgsConstructor
 @Transactional
 public class CategoryService {
 
     private final CategoryRepo categoryRepo;
     private final MenuRepo menuRepo;
 
-    public CategoryService(CategoryRepo categoryRepo, MenuRepo menuRepo) {
-        this.categoryRepo = categoryRepo;
-        this.menuRepo = menuRepo;
-    }
-
-
+    /** A01 카테고리 목록 */
     @Transactional(readOnly = true)
     public List<CategoryResponseDto> findAll() {
-        List<Category> categories = categoryRepo.findAllByOrderByIdAsc();
-        List<CategoryResponseDto> result = new ArrayList<>();
-        for (Category category : categories) {
-            result.add(toDto(category));
-        }
-        return result;
+        return categoryRepo.findAllByOrderByIdAsc().stream()
+                .map(this::toDto)
+                .toList();
     }
 
-    // A02
+    /** A02 카테고리 상세 */
     @Transactional(readOnly = true)
     public CategoryResponseDto find(Long id) {
-        Optional<Category> foundCategory = categoryRepo.findById(id);
-        if (foundCategory.isEmpty()) {
-            throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
-        }
-        return toDto(foundCategory.get());
+        return toDto(getCategory(id));
     }
 
-    // A03
-    public CategoryResponseDto create(CategoryRequestDto req) {
-        validate(req);
+    /** A03 카테고리 등록 */
+    public CategoryResponseDto create(CategoryRequestDto request) {
+        validate(request);
 
-        String name = req.name().trim();
+        String name = request.name().trim();
         if (categoryRepo.findByName(name).isPresent()) {
             throw new BusinessException(ErrorCode.CATEGORY_NAME_DUPLICATED);
         }
         try {
-            Category saved = categoryRepo.saveAndFlush(new Category(name));
-            return toDto(saved);
+            return toDto(categoryRepo.saveAndFlush(new Category(name)));
         } catch (DataIntegrityViolationException e) {
             throw new BusinessException(ErrorCode.CATEGORY_NAME_DUPLICATED);
         }
     }
 
-    // A04
-    public CategoryResponseDto update(Long id, CategoryRequestDto req) {
-        Optional<Category> foundCategory = categoryRepo.findById(id);
-        if (foundCategory.isEmpty()) {
-            throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
-        }
+    /** A04 카테고리 수정 */
+    public CategoryResponseDto update(Long id, CategoryRequestDto request) {
+        Category category = getCategory(id);
+        validate(request);
 
-        validate(req);
-
-        Category category = foundCategory.get();
-        String name = req.name().trim();
-
-        Optional<Category> found = categoryRepo.findByName(name);
-        if (found.isPresent() && !found.get().getId().equals(id)) {
+        String name = request.name().trim();
+        Optional<Category> sameName = categoryRepo.findByName(name);
+        if (sameName.isPresent() && !sameName.get().getId().equals(id)) {
             throw new BusinessException(ErrorCode.CATEGORY_NAME_DUPLICATED);
         }
 
@@ -85,33 +66,32 @@ public class CategoryService {
         return toDto(category);
     }
 
-    // A05
+    /** A05 카테고리 삭제 */
     public void delete(Long id) {
-        Optional<Category> foundCategory = categoryRepo.findById(id);
-        if (foundCategory.isEmpty()) {
-            throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
-        }
-        Category category = foundCategory.get();
+        Category category = getCategory(id);
         if (menuRepo.existsByCategoryId(id)) {
             throw new BusinessException(ErrorCode.CATEGORY_IN_USE);
         }
         categoryRepo.delete(category);
     }
 
-    private CategoryResponseDto toDto(Category c) {
-        return new CategoryResponseDto(c.getId(), c.getName());
+    private Category getCategory(Long id) {
+        return categoryRepo.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
     }
 
-    // 카테고리명 검증
-    private void validate(CategoryRequestDto req) {
-        if (req.name() == null) throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+    private CategoryResponseDto toDto(Category category) {
+        return new CategoryResponseDto(category.getId(), category.getName());
+    }
 
-        String name = req.name().trim();
-
-        // 카테고리명은 앞뒤 공백 제거 후 1~30자
+    // 카테고리명은 앞뒤 공백 제거 후 1~30자
+    private void validate(CategoryRequestDto request) {
+        if (request.name() == null) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+        }
+        String name = request.name().trim();
         if (name.isEmpty() || name.length() > 30) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR);
         }
     }
 }
-

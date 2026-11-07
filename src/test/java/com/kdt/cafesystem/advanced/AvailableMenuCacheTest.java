@@ -1,4 +1,4 @@
-package com.kdt.cafesystem.menu.service;
+package com.kdt.cafesystem.advanced;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -9,6 +9,8 @@ import com.kdt.cafesystem.menu.dto.MenuAvailabilityRequestDto;
 import com.kdt.cafesystem.menu.dto.MenuRequestDto;
 import com.kdt.cafesystem.menu.dto.MenuResponseDto;
 import com.kdt.cafesystem.menu.repository.MenuRepo;
+import com.kdt.cafesystem.menu.service.AvailableMenuCache;
+import com.kdt.cafesystem.menu.service.MenuService;
 import jakarta.persistence.EntityManagerFactory;
 import java.util.List;
 import org.hibernate.SessionFactory;

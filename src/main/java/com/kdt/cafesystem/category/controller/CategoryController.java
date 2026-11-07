@@ -6,61 +6,63 @@ import com.kdt.cafesystem.category.service.CategoryService;
 import com.kdt.cafesystem.menu.dto.MenuResponseDto;
 import com.kdt.cafesystem.menu.service.MenuService;
 import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.net.URI;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/categories")
+@RequiredArgsConstructor
 public class CategoryController {
 
     private final CategoryService categoryService;
     private final MenuService menuService;
 
-    public CategoryController(CategoryService categoryService, MenuService menuService) {
-        this.categoryService = categoryService;
-        this.menuService = menuService;
-    }
-
-    // A01 카테고리 목록 → 200
+    /** A01 카테고리 목록 */
     @GetMapping
-    public ResponseEntity<List<CategoryResponseDto>> findAll() {
-        return ResponseEntity.ok(categoryService.findAll());
+    public List<CategoryResponseDto> findAll() {
+        return categoryService.findAll();
     }
 
-    // A02 카테고리 상세 → 200
+    /** A02 카테고리 상세 */
     @GetMapping("/{categoryId}")
-    public ResponseEntity<CategoryResponseDto> find(@PathVariable Long categoryId) {
-        return ResponseEntity.ok(categoryService.find(categoryId));
+    public CategoryResponseDto find(@PathVariable Long categoryId) {
+        return categoryService.find(categoryId);
     }
 
-    // A03 카테고리 등록 → 201 + Location
+    /** A03 카테고리 등록 → 201 + Location */
     @PostMapping
-    public ResponseEntity<CategoryResponseDto> create(@Valid @RequestBody CategoryRequestDto requestDto) {
-        CategoryResponseDto response = categoryService.create(requestDto);
-        URI location = URI.create("/api/v1/categories/" + response.id());
-        return ResponseEntity.created(location).body(response);
+    public ResponseEntity<CategoryResponseDto> create(@Valid @RequestBody CategoryRequestDto request) {
+        CategoryResponseDto response = categoryService.create(request);
+        return ResponseEntity.created(URI.create("/api/v1/categories/" + response.id())).body(response);
     }
 
-    // A04 카테고리 수정 → 200
+    /** A04 카테고리 수정 */
     @PutMapping("/{categoryId}")
-    public ResponseEntity<CategoryResponseDto> update(@PathVariable Long categoryId,
-                                                      @Valid @RequestBody CategoryRequestDto requestDto) {
-        return ResponseEntity.ok(categoryService.update(categoryId, requestDto));
+    public CategoryResponseDto update(@PathVariable Long categoryId,
+                                      @Valid @RequestBody CategoryRequestDto request) {
+        return categoryService.update(categoryId, request);
     }
 
-    // A05 카테고리 삭제 → 204, 빈 본문
+    /** A05 카테고리 삭제 → 204, 빈 본문 */
     @DeleteMapping("/{categoryId}")
     public ResponseEntity<Void> delete(@PathVariable Long categoryId) {
         categoryService.delete(categoryId);
         return ResponseEntity.noContent().build();
     }
 
-    // A15 카테고리별 메뉴 → 200
+    /** A15 카테고리별 메뉴 */
     @GetMapping("/{categoryId}/menus")
-    public ResponseEntity<List<MenuResponseDto>> findAllByCategory(@PathVariable Long categoryId) {
-        return ResponseEntity.ok(menuService.findByCategory(categoryId));
+    public List<MenuResponseDto> findAllByCategory(@PathVariable Long categoryId) {
+        return menuService.findByCategory(categoryId);
     }
 }

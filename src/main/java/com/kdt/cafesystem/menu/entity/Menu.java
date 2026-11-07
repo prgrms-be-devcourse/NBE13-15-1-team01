@@ -1,11 +1,23 @@
 package com.kdt.cafesystem.menu.entity;
 
-
 import com.kdt.cafesystem.category.entity.Category;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "menus")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Menu {
 
     @Id
@@ -29,8 +41,6 @@ public class Menu {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    protected Menu() {}
-
     public Menu(String name, int price, String description, Category category) {
         this.name = name;
         this.price = price;
@@ -38,16 +48,23 @@ public class Menu {
         this.category = category;
     }
 
-    public Long getId() { return id; }
-    public String getName() { return name; }
-    public int getPrice() { return price; }
-    public String getDescription() { return description; }
-    public boolean isAvailable() { return available; }
-    public Category getCategory() { return category; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public void setName(String name) { this.name = name; }
-    public void setPrice(int price) { this.price = price; }
-    public void setDescription(String description) { this.description = description; }
-    public void setAvailable(boolean available) { this.available = available; }
-    public void setCategory(Category category) { this.category = category; }
+    public void setPrice(int price) {
+        this.price = price;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setAvailable(boolean available) {
+        this.available = available;
+    }
+
+    public void setCategory(Category category) {
+        this.category = category;
+    }
 }

@@ -1,13 +1,12 @@
 package com.kdt.cafesystem.menu.repository;
 
 import com.kdt.cafesystem.menu.entity.Menu;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
+public interface MenuRepo extends JpaRepository<Menu, Long> {
 
-public interface MenuRepo extends JpaRepository<Menu,Long> {
-
-    boolean existsByCategoryId(Long id);
+    boolean existsByCategoryId(Long categoryId);
 
     List<Menu> findAllByOrderByIdAsc();
 

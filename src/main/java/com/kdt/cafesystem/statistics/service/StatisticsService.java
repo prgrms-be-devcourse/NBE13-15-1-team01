@@ -32,7 +32,7 @@ public class StatisticsService {
 
     private final OrderRepository orderRepository;
 
-    // A17 접수일별 주문 통계
+    /** A17 접수일별 주문 통계 */
     public OrderStatisticsResponse getOrderStatistics(LocalDate date) {
         List<Order> orders = findOrdersReceivedOn(date);
 
@@ -45,11 +45,11 @@ public class StatisticsService {
                 totalAmountOfPlaced(orders));
     }
 
-    // A18 접수일별 메뉴 통계
+    /** A18 접수일별 메뉴 통계 */
     public List<MenuStatisticsResponse> getMenuStatistics(LocalDate date) {
         List<Order> orders = findOrdersReceivedOn(date);
 
-        // 메뉴id,이름,가격이 같은 항목끼리 수량을 더한다 (PLACED만)
+        // 메뉴 id·이름·가격이 같은 항목끼리 수량을 더한다 (PLACED만)
         Map<MenuKey, Long> quantityByMenu = new HashMap<>();
         for (Order order : orders) {
             if (order.getStatus() != OrderStatus.PLACED) {
@@ -76,7 +76,7 @@ public class StatisticsService {
                 .toList();
     }
 
-    // A24 접수일별 고객 통계
+    /** A24 접수일별 고객 통계 */
     public List<CustomerStatisticsResponse> getCustomerStatistics(LocalDate date) {
         List<Order> orders = findOrdersReceivedOn(date);
 

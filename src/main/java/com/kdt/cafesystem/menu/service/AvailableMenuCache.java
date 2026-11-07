@@ -4,8 +4,8 @@ import com.kdt.cafesystem.menu.dto.MenuResponseDto;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -13,25 +13,25 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
-
+/**
+ * 선택 심화: A19 판매 중 메뉴 Redis 캐시.
+ * Redis 오류가 나도 예외를 던지지 않고, 호출한 쪽이 DB에서 조회하도록 한다.
+ */
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class AvailableMenuCache {
 
-    static final String KEY = "cafe:menus:available";
-    static final Duration TTL = Duration.ofSeconds(60);
+    public static final String KEY = "cafe:menus:available";
+    public static final Duration TTL = Duration.ofSeconds(60);
 
-    private static final Logger log = LoggerFactory.getLogger(AvailableMenuCache.class);
-    private static final TypeReference<List<MenuResponseDto>> MENU_LIST = new TypeReference<>() {};
+    private static final TypeReference<List<MenuResponseDto>> MENU_LIST = new TypeReference<>() {
+    };
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
-    public AvailableMenuCache(StringRedisTemplate redisTemplate, ObjectMapper objectMapper) {
-        this.redisTemplate = redisTemplate;
-        this.objectMapper = objectMapper;
-    }
-
-    // 캐시에 있으면 목록, 없거나 Redis 오류면 빈 Optional
+    /** 캐시에 있으면 목록, 없거나 Redis 오류면 빈 Optional */
     public Optional<List<MenuResponseDto>> get() {
         try {
             String json = redisTemplate.opsForValue().get(KEY);
@@ -45,7 +45,7 @@ public class AvailableMenuCache {
         }
     }
 
-    // 목록을 JSON으로 바꿔 TTL과 함께 저장
+    /** 목록을 JSON으로 바꿔 TTL과 함께 저장 */
     public void put(List<MenuResponseDto> menus) {
         try {
             redisTemplate.opsForValue().set(KEY, objectMapper.writeValueAsString(menus), TTL);
@@ -54,7 +54,7 @@ public class AvailableMenuCache {
         }
     }
 
-    // 메뉴가 바뀌면 호출. DB 변경이 확정(commit)된 뒤에 지운다
+    /** 메뉴가 바뀌면 호출. DB 변경이 확정(commit)된 뒤에 지운다 */
     public void evict() {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {

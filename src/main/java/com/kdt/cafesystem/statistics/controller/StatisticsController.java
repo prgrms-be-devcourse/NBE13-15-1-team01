@@ -21,7 +21,7 @@ public class StatisticsController {
 
     private final StatisticsService statisticsService;
 
-    // A17 접수일별 주문 통계 GET
+    /** A17 접수일별 주문 통계 */
     @GetMapping("/orders")
     public OrderStatisticsResponse getOrderStatistics(
             @RequestParam
@@ -31,7 +31,7 @@ public class StatisticsController {
         return statisticsService.getOrderStatistics(date);
     }
 
-    // A18 접수일별 메뉴 통계 GET
+    /** A18 접수일별 메뉴 통계 */
     @GetMapping("/menus")
     public List<MenuStatisticsResponse> getMenuStatistics(
             @RequestParam
@@ -41,7 +41,7 @@ public class StatisticsController {
         return statisticsService.getMenuStatistics(date);
     }
 
-    // A24 접수일별 고객 통계 GET
+    /** A24 접수일별 고객 통계 */
     @GetMapping("/customers")
     public List<CustomerStatisticsResponse> getCustomerStatistics(
             @RequestParam
@@ -50,5 +50,4 @@ public class StatisticsController {
             LocalDate date) {
         return statisticsService.getCustomerStatistics(date);
     }
-
 }

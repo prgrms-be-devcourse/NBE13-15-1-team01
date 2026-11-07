@@ -30,7 +30,7 @@ public class DeliveryBatchService {
 
     private final OrderRepository orderRepository;
 
-    // A14 배송 묶음
+    /** A14 배송 묶음 */
     public List<DeliveryBatchResponse> findBatches(LocalDate shippingDate) {
         List<Order> orders = orderRepository
                 .findByShippingDateAndStatusOrderByIdAsc(shippingDate, OrderStatus.PLACED);
@@ -92,7 +92,7 @@ public class DeliveryBatchService {
                 .toList();
     }
 
-    // 합산 기준 : id, 이름, 가격
+    // 합산 기준: id, 이름, 가격
     private record ItemKey(Long menuId, String menuName, int unitPrice) {
     }
 }
