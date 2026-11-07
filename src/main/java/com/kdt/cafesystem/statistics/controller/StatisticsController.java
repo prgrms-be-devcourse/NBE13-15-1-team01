@@ -1,0 +1,53 @@
+package com.kdt.cafesystem.statistics.controller;
+
+import com.kdt.cafesystem.global.validation.AllowedDate;
+import com.kdt.cafesystem.statistics.dto.CustomerStatisticsResponse;
+import com.kdt.cafesystem.statistics.dto.MenuStatisticsResponse;
+import com.kdt.cafesystem.statistics.dto.OrderStatisticsResponse;
+import com.kdt.cafesystem.statistics.service.StatisticsService;
+import java.time.LocalDate;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/v1/statistics")
+@RequiredArgsConstructor
+public class StatisticsController {
+
+    private final StatisticsService statisticsService;
+
+    /** A17 접수일별 주문 통계 */
+    @GetMapping("/orders")
+    public OrderStatisticsResponse getOrderStatistics(
+            @RequestParam
+            @DateTimeFormat(pattern = "uuuu-MM-dd")
+            @AllowedDate
+            LocalDate date) {
+        return statisticsService.getOrderStatistics(date);
+    }
+
+    /** A18 접수일별 메뉴 통계 */
+    @GetMapping("/menus")
+    public List<MenuStatisticsResponse> getMenuStatistics(
+            @RequestParam
+            @DateTimeFormat(pattern = "uuuu-MM-dd")
+            @AllowedDate
+            LocalDate date) {
+        return statisticsService.getMenuStatistics(date);
+    }
+
+    /** A24 접수일별 고객 통계 */
+    @GetMapping("/customers")
+    public List<CustomerStatisticsResponse> getCustomerStatistics(
+            @RequestParam
+            @DateTimeFormat(pattern = "uuuu-MM-dd")
+            @AllowedDate
+            LocalDate date) {
+        return statisticsService.getCustomerStatistics(date);
+    }
+}
